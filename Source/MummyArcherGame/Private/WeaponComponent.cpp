@@ -45,7 +45,7 @@ void UWeaponComponent::Fire()
 				, nullptr
 				, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 
-			Arrow->GetProjectileMovement()->InitialSpeed = 1000.f;
+			Arrow->GetProjectileMovement()->InitialSpeed = 5000.f;
 			UGameplayStatics::FinishSpawningActor(Arrow, SpawnTransform);
 		}
 	}
