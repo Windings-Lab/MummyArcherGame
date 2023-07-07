@@ -3,14 +3,6 @@
 #include "../Public/ArrowProjectile.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
-void AArrowProjectile::BeginPlay()
-{
-	Super::BeginPlay();
-
-	auto* Test = CollisionComp->GetOwner();
-	CollisionComp->IgnoreActorWhenMoving(GetOwner(), true);
-}
-
 AArrowProjectile::AArrowProjectile() 
 {
 	CollisionComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMeshComp"));
@@ -32,7 +24,7 @@ AArrowProjectile::AArrowProjectile()
 	ProjectileMovement->bShouldBounce = false;
 
 	// Die after 3 seconds by default
-	InitialLifeSpan = 3.0f;
+	InitialLifeSpan = 5.f;
 }
 
 void AArrowProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)

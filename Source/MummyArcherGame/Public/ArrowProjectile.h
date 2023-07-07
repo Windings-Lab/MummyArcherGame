@@ -21,8 +21,6 @@ class AArrowProjectile : public AActor
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	UProjectileMovementComponent* ProjectileMovement;
 
-	virtual void BeginPlay() override;
-
 public:
 	AArrowProjectile();
 

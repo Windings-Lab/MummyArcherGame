@@ -8,6 +8,8 @@
 #include "Camera/PlayerCameraManager.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "GameFramework/ProjectileMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values for this component's properties
 UWeaponComponent::UWeaponComponent()
@@ -33,16 +35,18 @@ void UWeaponComponent::Fire()
 			APlayerController* PlayerController = Cast<APlayerController>(Character->GetController());
 			const FRotator SpawnRotation = PlayerController->PlayerCameraManager->GetCameraRotation();
 			// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
-			FVector RotatedVector = SpawnRotation.RotateVector(MuzzleOffset);
-			FVector ActorLoc = GetOwner()->GetActorLocation();
-			const FVector SpawnLocation = ActorLoc + RotatedVector;
-	
-			//Set Spawn Collision Handling Override
-			FActorSpawnParameters ActorSpawnParams;
-			ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			const FVector SpawnLocation = GetOwner()->GetActorLocation() + SpawnRotation.RotateVector(MuzzleOffset);
+			FTransform SpawnTransform = FTransform(SpawnRotation, SpawnLocation);
 	
 			// Spawn the projectile at the muzzle
-			World->SpawnActor<AArrowProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+			auto* Arrow = World->SpawnActorDeferred<AArrowProjectile>(ProjectileClass
+				, SpawnTransform
+				, Character
+				, nullptr
+				, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+
+			Arrow->GetProjectileMovement()->InitialSpeed = 1000.f;
+			UGameplayStatics::FinishSpawningActor(Arrow, SpawnTransform);
 		}
 	}
 }
