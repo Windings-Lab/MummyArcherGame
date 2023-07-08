@@ -55,6 +55,9 @@ void ABasicCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInp
 
 		//Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ABasicCharacter::Look);
+
+		//Focusing
+		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ABasicCharacter::Look);
 	}
 }
 
