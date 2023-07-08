@@ -19,7 +19,7 @@ UWeaponComponent::UWeaponComponent()
 }
 
 
-void UWeaponComponent::Fire()
+void UWeaponComponent::Fire(const FInputActionInstance& ActionInstance)
 {
 	if (Character == nullptr || Character->GetController() == nullptr)
 	{
@@ -45,7 +45,8 @@ void UWeaponComponent::Fire()
 				, nullptr
 				, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 
-			Arrow->GetProjectileMovement()->InitialSpeed = 5000.f;
+			float ArrowSpeed = FMath::Clamp(ActionInstance.GetElapsedTime() * 1500.f, 500.f, Arrow->GetProjectileMovement()->MaxSpeed);
+			Arrow->GetProjectileMovement()->InitialSpeed = ArrowSpeed;
 			UGameplayStatics::FinishSpawningActor(Arrow, SpawnTransform);
 		}
 	}
