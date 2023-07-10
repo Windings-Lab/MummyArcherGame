@@ -11,7 +11,7 @@ struct FFireAction
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	class UInputAction* FireAction;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
@@ -26,14 +26,11 @@ struct FFocusAction
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	class UInputAction* FocusAction;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<UUserWidget> SightWidgetClass;
-
-	UPROPERTY()
-	UUserWidget* SightWidget;
 };
 
 UCLASS(Blueprintable, BlueprintType, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -47,6 +44,9 @@ public:
 	/** Projectile class to spawn */
 	UPROPERTY(EditDefaultsOnly, Category=Weapon)
 	TSubclassOf<class AArrowProjectile> ProjectileClass;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TSubclassOf<UUserWidget> BowPowerWidgetClass;
 
 	/** Gun muzzle's offset from the characters location */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Weapon)
@@ -64,12 +64,18 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=Weapon)
 	float ArrowMinSpeed;
+
+	UFUNCTION(BlueprintCallable, Category=Input)
+	void FireButtonPresses(const FInputActionInstance& ActionInstance);
 	
 	UFUNCTION(BlueprintCallable, Category=Input)
 	void Fire(const FInputActionInstance& ActionInstance);
+
+	UFUNCTION(BlueprintCallable, Category=Input)
+	void FireButtonReleased(const FInputActionInstance& ActionInstance);
 	
 	UFUNCTION(BlueprintCallable, Category=Input)
-	void CalculateForceScale(const FInputActionInstance& ActionInstance);
+	void CalculateArrowPath(const FInputActionInstance& ActionInstance);
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=Input)
 	FFocusAction FocusActionStruct;
@@ -92,8 +98,14 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
-	/** The Character holding this weapon*/
+	UPROPERTY()
 	class ABasicCharacter* Character;
+	
+	UPROPERTY()
+	UUserWidget* SightWidget;
+
+	UPROPERTY()
+	class UBowPowerWidget* BowPowerWidget;
 
 	float CalculateArrowSpeed(float MinPower, float MaxPower, float ElapsedTime) const;
 
