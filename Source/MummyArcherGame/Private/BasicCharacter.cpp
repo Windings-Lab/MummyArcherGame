@@ -6,6 +6,7 @@
 #include "Components/CapsuleComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Camera/CameraShakeSourceComponent.h"
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -21,6 +22,9 @@ ABasicCharacter::ABasicCharacter()
 	FirstPersonCameraComponent->SetupAttachment(GetCapsuleComponent());
 	FirstPersonCameraComponent->SetRelativeLocation(FVector(-10.f, 0.f, 60.f)); // Position the camera
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
+
+	CameraShakeSourceComponent = CreateDefaultSubobject<UCameraShakeSourceComponent>(TEXT("Wobble"));
+	CameraShakeSourceComponent->SetupAttachment(GetCapsuleComponent());
 }
 
 void ABasicCharacter::BeginPlay()
@@ -57,7 +61,7 @@ void ABasicCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInp
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ABasicCharacter::Look);
 
 		//Focusing
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ABasicCharacter::Look);
+		EnhancedInputComponent->BindAction(FocusAction, ETriggerEvent::Triggered, this, &ABasicCharacter::Focus);
 	}
 }
 
@@ -85,5 +89,21 @@ void ABasicCharacter::Look(const FInputActionValue& Value)
 		// add yaw and pitch input to controller
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
+	}
+}
+
+void ABasicCharacter::Focus(const FInputActionValue& Value)
+{
+	bool Focused = Value.Get<bool>();
+
+	if(Focused)
+	{
+		FirstPersonCameraComponent->SetFieldOfView(60.f);
+		CameraShakeSourceComponent->Start();
+	}
+	else
+	{
+		FirstPersonCameraComponent->SetFieldOfView(90.f);
+		CameraShakeSourceComponent->StopAllCameraShakes(true);
 	}
 }
