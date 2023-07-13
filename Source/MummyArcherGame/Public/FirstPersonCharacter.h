@@ -7,7 +7,7 @@
 #include "InputActionValue.h"
 #include "FirstPersonCharacter.generated.h"
 
- UCLASS(config=Game)
+UCLASS()
 class AFirstPersonCharacter : public ACharacter
 {
 	GENERATED_BODY()
