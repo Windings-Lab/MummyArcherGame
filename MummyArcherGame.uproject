@@ -11,7 +11,8 @@
 			"AdditionalDependencies": [
 				"GameplayCameras",
 				"EnhancedInput",
-				"UMG"
+				"UMG",
+				"Engine"
 			]
 		}
 	],
