@@ -4,24 +4,25 @@
 #include "WeaponComponent.h"
 
 #include "BowPowerWidget.h"
-#include "FirstPersonCharacter.h"
 #include "ArrowProjectile.h"
 #include "GameFramework/PlayerController.h"
 #include "Camera/PlayerCameraManager.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Blueprint/UserWidget.h"
+#include "GameFramework/Character.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
 
 // Sets default values for this component's properties
 UWeaponComponent::UWeaponComponent()
 {
-	// Default offset from the character location for projectiles to spawn
-	MuzzleOffset = FVector(100.0f, 0.0f, 10.0f);
-	PrimaryComponentTick.bCanEverTick = true;
-	PrimaryComponentTick.bStartWithTickEnabled = true;
-	bAutoActivate = true;
+	FireActionStruct.TimeUntilMaxPower = 3.f;
+	FireActionStruct.TimeToForceShoot  = 6.f;
+
+	ArrowMaxSpeed = 10000.f;
+	ArrowMinSpeed = 500.f;
 }
 
 
@@ -32,36 +33,34 @@ void UWeaponComponent::FireButtonPresses(const FInputActionInstance& ActionInsta
 
 void UWeaponComponent::Fire(const FInputActionInstance& ActionInstance)
 {
-	if (Character == nullptr || Character->GetController() == nullptr)
-	{
-		return;
-	}
-
-	// Try and fire a projectile
-	if (ProjectileClass != nullptr)
-	{
-		UWorld* const World = GetWorld();
-		if (World != nullptr)
-		{
-			APlayerController* PlayerController = Cast<APlayerController>(Character->GetController());
-			const FRotator SpawnRotation = PlayerController->PlayerCameraManager->GetCameraRotation();
-			// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
-			const FVector SpawnLocation = GetSocketLocation("Muzzle") + SpawnRotation.RotateVector(MuzzleOffset);
-			FTransform SpawnTransform = FTransform(SpawnRotation, SpawnLocation);
+	if (!Character
+		|| !Character->GetController()
+		|| !ProjectileClass) return;
 	
-			// Spawn the projectile at the muzzle
-			auto* Arrow = World->SpawnActorDeferred<AArrowProjectile>(ProjectileClass
-				, SpawnTransform
-				, Character
-				, nullptr
-				, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+	UWorld* const World = GetWorld(); 
+	if (!World) return;
 
-			auto* ArrowMovement = Arrow->GetProjectileMovement();
-			ArrowMovement->MaxSpeed = ArrowMaxSpeed;
-			ArrowMovement->InitialSpeed = CalculateArrowSpeed(ArrowMinSpeed, ArrowMaxSpeed, ActionInstance.GetElapsedTime());
-			UGameplayStatics::FinishSpawningActor(Arrow, SpawnTransform);}
+	BowTraceLine(World);
+	CreateArrow(World, ActionInstance.GetElapsedTime());
+}
 
-			if(BowPowerWidget) BowPowerWidget->SetPower(ForceScale, ArrowMinSpeed, ArrowMaxSpeed);
+void UWeaponComponent::BowTraceLine(UWorld* const World)
+{
+	auto* PlayerCameraManager = UGameplayStatics::GetPlayerCameraManager(World, 0);
+	FVector TraceStartLocation = PlayerCameraManager->K2_GetActorLocation();
+
+	FVector CameraForwardVector = PlayerCameraManager->GetActorForwardVector();
+	FVector TraceEndLocation = TraceStartLocation + CameraForwardVector * FVector(15000, 15000, 15000);
+	ImpactPoint = TraceEndLocation;
+	
+	FHitResult HitResult;
+	FCollisionQueryParams CollisionQueryParams;
+	CollisionQueryParams.AddIgnoredActor(Character);
+	World->LineTraceSingleByChannel(HitResult, TraceStartLocation, TraceEndLocation, ECC_Visibility, CollisionQueryParams);
+
+	if(HitResult.bBlockingHit)
+	{
+		ImpactPoint = HitResult.ImpactPoint;
 	}
 }
 
@@ -70,19 +69,18 @@ void UWeaponComponent::FireButtonReleased(const FInputActionInstance& ActionInst
 	if(BowPowerWidget) BowPowerWidget->RemoveFromParent();
 }
 
-void UWeaponComponent::CalculateArrowPath(const FInputActionInstance& ActionInstance)
+void UWeaponComponent::FireButtonHolding(const FInputActionInstance& ActionInstance)
 {
-	ForceScale = CalculateArrowSpeed(ArrowMinSpeed, ArrowMaxSpeed, ActionInstance.GetElapsedTime());
-
-	APlayerController* PlayerController = Cast<APlayerController>(Character->GetController());
-	const FRotator SpawnRotation = PlayerController->PlayerCameraManager->GetCameraRotation();
-	// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
-	const FVector SpawnLocation = GetSocketLocation("Muzzle") + SpawnRotation.RotateVector(MuzzleOffset);
+	BowTraceLine(GetWorld());
+	PowerScale = CalculateArrowSpeed(ArrowMinSpeed, ArrowMaxSpeed, ActionInstance.GetElapsedTime());
+	FTransform SpawnTransform	= CalculateArrowTransform();
+	FVector SpawnLocation		= SpawnTransform.GetLocation();
+	FRotator SpawnRotation		= SpawnTransform.Rotator();
 
 	FPredictProjectilePathParams ProjectilePathParams = FPredictProjectilePathParams(
 		10.f
 		, SpawnLocation
-		, SpawnRotation.Vector() * ForceScale,
+		, SpawnRotation.Vector() * PowerScale,
 		10.f
 		, ECC_WorldStatic, GetOwner());
 	ProjectilePathParams.DrawDebugType = EDrawDebugTrace::Type::ForDuration;
@@ -95,21 +93,21 @@ void UWeaponComponent::CalculateArrowPath(const FInputActionInstance& ActionInst
 
 	UGameplayStatics::PredictProjectilePath(GetWorld(), ProjectilePathParams, ProjectilePathResult);
 
-	if(BowPowerWidget) BowPowerWidget->SetPower(ForceScale, ArrowMinSpeed, ArrowMaxSpeed);
+	if(BowPowerWidget) BowPowerWidget->SetPower(PowerScale, ArrowMinSpeed, ArrowMaxSpeed);
 }
 
-float UWeaponComponent::CalculateArrowSpeed(float MinPower, float MaxPower, float ElapsedTime) const
+float UWeaponComponent::CalculateArrowSpeed(float MinPower, float MaxPower, float HoldTime) const
 {
 	float Power;
 	const float PowerDifference = MaxPower - MinPower;
-	if(ElapsedTime <= FireActionStruct.TimeUntilMaxPower)
+	if(HoldTime <= FireActionStruct.TimeUntilMaxPower)
 	{
-		Power =  PowerDifference * ElapsedTime / FireActionStruct.TimeUntilMaxPower + MinPower;
+		Power =  PowerDifference * HoldTime / FireActionStruct.TimeUntilMaxPower + MinPower;
 	}
-	else if(ElapsedTime <= FireActionStruct.TimeToForceShoot)
+	else if(HoldTime <= FireActionStruct.TimeToForceShoot)
 	{
 		float TToShoot = FireActionStruct.TimeToForceShoot - FireActionStruct.TimeUntilMaxPower;
-		float T = TToShoot - (ElapsedTime - FireActionStruct.TimeUntilMaxPower);
+		float T = TToShoot - (HoldTime - FireActionStruct.TimeUntilMaxPower);
 		Power = PowerDifference * T / TToShoot + MinPower;
 	}
 	else
@@ -120,25 +118,53 @@ float UWeaponComponent::CalculateArrowSpeed(float MinPower, float MaxPower, floa
 	return Power;
 }
 
+FTransform UWeaponComponent::CalculateArrowTransform() const
+{
+	FTransform Transform = GetSocketTransform(TEXT("arrow_socket"));
+	Transform.SetScale3D(UE::Math::TVector<double>(1.f, 1.f, 1.f));
+	Transform.SetRotation(UKismetMathLibrary::MakeRotFromX(ImpactPoint - Transform.GetLocation()).Quaternion());
+
+	return Transform;
+}
+
+void UWeaponComponent::CreateArrow(UWorld* const World, const float HoldTime)
+{
+	const FTransform SpawnTransform = CalculateArrowTransform();
+
+	auto* Arrow = World->SpawnActorDeferred<AArrowProjectile>(ProjectileClass
+															  , SpawnTransform
+															  , Character
+															  , nullptr
+															  , ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
+			
+	auto* ArrowMovement = Arrow->GetProjectileMovement();
+	ArrowMovement->MaxSpeed = ArrowMaxSpeed;
+	ArrowMovement->InitialSpeed = CalculateArrowSpeed(ArrowMinSpeed, ArrowMaxSpeed, HoldTime);
+	UGameplayStatics::FinishSpawningActor(Arrow, SpawnTransform);
+}
+
 void UWeaponComponent::Focus(const FInputActionValue& Value)
 {
 	if(!SightWidget) return;
+	auto* PlayerCameraManager = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
 	
 	bool Focused = Value.Get<bool>();
 	if(Focused)
 	{
 		SightWidget->AddToViewport();
+		PlayerCameraManager->SetFOV(60.f);
 	}
 	else
 	{
 		SightWidget->RemoveFromParent();
+		PlayerCameraManager->SetFOV(90.f);
 	}
 }
 
 void UWeaponComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
+	
 	if(FocusActionStruct.SightWidgetClass)
 	{
 		SightWidget = CreateWidget<UUserWidget>(GetWorld(), FocusActionStruct.SightWidgetClass);
@@ -150,7 +176,7 @@ void UWeaponComponent::BeginPlay()
 	}
 }
 
-void UWeaponComponent::AttachWeapon(AFirstPersonCharacter* TargetCharacter)
+void UWeaponComponent::AttachWeapon(ACharacter* TargetCharacter)
 {
 	Character = TargetCharacter;
 	if (Character == nullptr)
@@ -173,17 +199,13 @@ void UWeaponComponent::AttachWeapon(AFirstPersonCharacter* TargetCharacter)
 			EnhancedInputComponent->BindAction(FireActionStruct.FireAction, ETriggerEvent::Triggered, this, &UWeaponComponent::Fire);
 			EnhancedInputComponent->BindAction(FireActionStruct.FireAction, ETriggerEvent::Completed, this, &UWeaponComponent::FireButtonReleased);
 			EnhancedInputComponent->BindAction(FireActionStruct.FireAction, ETriggerEvent::Canceled, this, &UWeaponComponent::FireButtonReleased);
-			EnhancedInputComponent->BindAction(FireActionStruct.FireAction, ETriggerEvent::Ongoing, this, &UWeaponComponent::CalculateArrowPath);
+			EnhancedInputComponent->BindAction(FireActionStruct.FireAction, ETriggerEvent::Ongoing, this, &UWeaponComponent::FireButtonHolding);
 			
 			EnhancedInputComponent->BindAction(FocusActionStruct.FocusAction, ETriggerEvent::Triggered, this, &UWeaponComponent::Focus);
+
+			int test =5;
 		}
 	}
-}
-
-void UWeaponComponent::TickComponent(float DeltaTime, ELevelTick TickType,
-	FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
 
 void UWeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)

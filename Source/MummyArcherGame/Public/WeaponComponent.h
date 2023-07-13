@@ -41,18 +41,16 @@ class MUMMYARCHERGAME_API UWeaponComponent : public UStaticMeshComponent
 	UWeaponComponent();
 
 public:
-	/** Projectile class to spawn */
+	UFUNCTION(BlueprintCallable, Category=Weapon)
+	void AttachWeapon(ACharacter* TargetCharacter);
+
+public:
 	UPROPERTY(EditDefaultsOnly, Category=Weapon)
 	TSubclassOf<class AArrowProjectile> ProjectileClass;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<UUserWidget> BowPowerWidgetClass;
-
-	/** Gun muzzle's offset from the characters location */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Weapon)
-	FVector MuzzleOffset;
-
-	/** MappingContext */
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input)
 	class UInputMappingContext* FireMappingContext;
 
@@ -64,7 +62,23 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=Weapon)
 	float ArrowMinSpeed;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=Input)
+	FFocusAction FocusActionStruct;
 
+protected:
+
+	virtual void BeginPlay() override;
+	
+	/** Ends gameplay for this component. */
+	UFUNCTION()
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+private:
+	// Action functions
+	UFUNCTION(BlueprintCallable, Category=Input)
+	void FireButtonHolding(const FInputActionInstance& ActionInstance);
+	
 	UFUNCTION(BlueprintCallable, Category=Input)
 	void FireButtonPresses(const FInputActionInstance& ActionInstance);
 	
@@ -75,39 +89,25 @@ public:
 	void FireButtonReleased(const FInputActionInstance& ActionInstance);
 	
 	UFUNCTION(BlueprintCallable, Category=Input)
-	void CalculateArrowPath(const FInputActionInstance& ActionInstance);
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=Input)
-	FFocusAction FocusActionStruct;
-	
-	UFUNCTION(BlueprintCallable, Category=Input)
 	void Focus(const FInputActionValue& Value);
 
-	/** Attaches the actor to a FirstPersonCharacter */
-	UFUNCTION(BlueprintCallable, Category=Weapon)
-	void AttachWeapon(AFirstPersonCharacter* TargetCharacter);
-
-protected:
-
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
-	virtual void BeginPlay() override;
-	
-	/** Ends gameplay for this component. */
-	UFUNCTION()
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	//
+	float CalculateArrowSpeed(float MinPower, float MaxPower, float HoldTime) const;
+	FTransform CalculateArrowTransform() const;
+	void CreateArrow(UWorld* const World, float HoldTime);
+	void BowTraceLine(UWorld* const World);
 
 private:
 	UPROPERTY()
-	class AFirstPersonCharacter* Character;
+	class ACharacter* Character;
 	
 	UPROPERTY()
 	UUserWidget* SightWidget;
-
 	UPROPERTY()
 	class UBowPowerWidget* BowPowerWidget;
+	
+	float PowerScale;
 
-	float CalculateArrowSpeed(float MinPower, float MaxPower, float ElapsedTime) const;
-
-	float ForceScale;
+	FVector CrosshairLocation;
+	FVector ImpactPoint;
 };

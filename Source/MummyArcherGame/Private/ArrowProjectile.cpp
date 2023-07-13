@@ -3,6 +3,7 @@
 #include "ArrowProjectile.h"
 
 #include "FirstPersonCharacter.h"
+#include "Components/BoxComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
 void AArrowProjectile::OnConstruction(const FTransform& Transform)
@@ -12,25 +13,26 @@ void AArrowProjectile::OnConstruction(const FTransform& Transform)
 	auto* PlayerOwner = Cast<AFirstPersonCharacter>(GetOwner());
 	if(PlayerOwner)
 	{
-		CollisionComp->IgnoreActorWhenMoving(PlayerOwner, true);
+		Arrow->IgnoreActorWhenMoving(PlayerOwner, true);
 	}
 }
 
 AArrowProjectile::AArrowProjectile() 
 {
-	CollisionComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMeshComp"));
-	CollisionComp->BodyInstance.SetCollisionProfileName("Projectile");
-	CollisionComp->OnComponentHit.AddDynamic(this, &AArrowProjectile::OnHit);		// set up a notification for when this component hits something blocking
-
-	// Players can't walk on it
-	CollisionComp->SetWalkableSlopeOverride(FWalkableSlopeOverride(WalkableSlope_Unwalkable, 0.f));
-	CollisionComp->CanCharacterStepUpOn = ECB_No;
-
-	RootComponent = CollisionComp;
+	DefaultSceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("DefaultSceneComponent"));
+	RootComponent = DefaultSceneRoot;
 	
-	// Use a ProjectileMovementComponent to govern this projectile's movement
+	Arrow = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Arrow"));
+	Arrow->SetWalkableSlopeOverride(FWalkableSlopeOverride(WalkableSlope_Unwalkable, 0.f));
+	Arrow->CanCharacterStepUpOn = ECB_No;
+	Arrow->SetupAttachment(RootComponent);
+
+	BoxCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxCollider"));
+	BoxCollider->OnComponentBeginOverlap.AddDynamic(this, &AArrowProjectile::OnArrowBeginOverlap);
+	BoxCollider->SetupAttachment(Arrow);
+	
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileComp"));
-	ProjectileMovement->UpdatedComponent = CollisionComp;
+	ProjectileMovement->UpdatedComponent = Arrow;
 	ProjectileMovement->InitialSpeed = 1000.f;
 	ProjectileMovement->MaxSpeed = 3000.f;
 	ProjectileMovement->bRotationFollowsVelocity = true;
@@ -40,13 +42,22 @@ AArrowProjectile::AArrowProjectile()
 	InitialLifeSpan = 5.f;
 }
 
-void AArrowProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+void AArrowProjectile::OnArrowBeginOverlap(UPrimitiveComponent* OverlappedComponent
+		, AActor* OtherActor
+		, UPrimitiveComponent* OtherComp
+		, int32 OtherBodyIndex
+		, bool bFromSweep
+		, const FHitResult & SweepResult)
 {
 	// Only add impulse and destroy projectile if we hit a physics
-	if ((OtherActor != nullptr) && (OtherActor != this) && (OtherComp != nullptr) && OtherComp->IsSimulatingPhysics())
+	if ((OtherActor != nullptr) && (OtherActor != this) && (OtherComp != nullptr))
 	{
-		OtherComp->AddImpulseAtLocation(GetVelocity() * 100.0f, GetActorLocation());
+		ProjectileMovement->StopMovementImmediately();
+		ProjectileMovement->ProjectileGravityScale = 0.f;
 
-		Destroy();
+		// Arrow will be stuck with collided actor
+		const FAttachmentTransformRules AttachmentTransformRules = FAttachmentTransformRules(EAttachmentRule::KeepWorld, true);
+		AttachToActor(OtherActor, AttachmentTransformRules);
+		BoxCollider->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 	}
 }

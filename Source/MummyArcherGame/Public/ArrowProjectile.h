@@ -6,20 +6,23 @@
 #include "GameFramework/Actor.h"
 #include "ArrowProjectile.generated.h"
 
-class USphereComponent;
-class UProjectileMovementComponent;
-
 UCLASS(config=Game)
 class AArrowProjectile : public AActor
 {
 	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	USceneComponent* DefaultSceneRoot;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	UStaticMeshComponent* CollisionComp;
+	UStaticMeshComponent* Arrow;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	class UBoxComponent* BoxCollider;
 
 	/** Projectile movement component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	UProjectileMovementComponent* ProjectileMovement;
+	class UProjectileMovementComponent* ProjectileMovement;
 
 	virtual void OnConstruction(const FTransform& Transform) override;
 
@@ -28,10 +31,13 @@ public:
 
 	/** called when projectile hits something */
 	UFUNCTION()
-	void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+	void OnArrowBeginOverlap(UPrimitiveComponent* OverlappedComponent
+		, AActor* OtherActor
+		, UPrimitiveComponent* OtherComp
+		, int32 OtherBodyIndex
+		, bool bFromSweep
+		, const FHitResult & SweepResult);
 
-	/** Returns CollisionComp subobject **/
-	UStaticMeshComponent* GetCollisionComp() const { return CollisionComp; }
 	/** Returns ProjectileMovement subobject **/
 	UProjectileMovementComponent* GetProjectileMovement() const { return ProjectileMovement; }
 };
