@@ -1,6 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "../Public/BasicCharacter.h"
+#include "FirstPersonCharacter.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -12,7 +12,7 @@
 //////////////////////////////////////////////////////////////////////////
 // AMummyArcherGameCharacter
 
-ABasicCharacter::ABasicCharacter()
+AFirstPersonCharacter::AFirstPersonCharacter()
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
@@ -27,7 +27,7 @@ ABasicCharacter::ABasicCharacter()
 	CameraShakeSourceComponent->SetupAttachment(GetCapsuleComponent());
 }
 
-void ABasicCharacter::BeginPlay()
+void AFirstPersonCharacter::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
@@ -45,7 +45,7 @@ void ABasicCharacter::BeginPlay()
 
 //////////////////////////////////////////////////////////////////////////// Input
 
-void ABasicCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
+void AFirstPersonCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
@@ -55,18 +55,18 @@ void ABasicCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInp
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
 		//Moving
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ABasicCharacter::Move);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AFirstPersonCharacter::Move);
 
 		//Looking
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ABasicCharacter::Look);
+		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AFirstPersonCharacter::Look);
 
 		//Focusing
-		EnhancedInputComponent->BindAction(FocusAction, ETriggerEvent::Triggered, this, &ABasicCharacter::Focus);
+		EnhancedInputComponent->BindAction(FocusAction, ETriggerEvent::Triggered, this, &AFirstPersonCharacter::Focus);
 	}
 }
 
 
-void ABasicCharacter::Move(const FInputActionValue& Value)
+void AFirstPersonCharacter::Move(const FInputActionValue& Value)
 {
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
@@ -79,7 +79,7 @@ void ABasicCharacter::Move(const FInputActionValue& Value)
 	}
 }
 
-void ABasicCharacter::Look(const FInputActionValue& Value)
+void AFirstPersonCharacter::Look(const FInputActionValue& Value)
 {
 	// input is a Vector2D
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
@@ -92,7 +92,7 @@ void ABasicCharacter::Look(const FInputActionValue& Value)
 	}
 }
 
-void ABasicCharacter::Focus(const FInputActionValue& Value)
+void AFirstPersonCharacter::Focus(const FInputActionValue& Value)
 {
 	bool Focused = Value.Get<bool>();
 

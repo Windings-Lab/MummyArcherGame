@@ -85,7 +85,7 @@ public:
 
 	/** Attaches the actor to a FirstPersonCharacter */
 	UFUNCTION(BlueprintCallable, Category=Weapon)
-	void AttachWeapon(ABasicCharacter* TargetCharacter);
+	void AttachWeapon(AFirstPersonCharacter* TargetCharacter);
 
 protected:
 
@@ -99,7 +99,7 @@ protected:
 
 private:
 	UPROPERTY()
-	class ABasicCharacter* Character;
+	class AFirstPersonCharacter* Character;
 	
 	UPROPERTY()
 	UUserWidget* SightWidget;

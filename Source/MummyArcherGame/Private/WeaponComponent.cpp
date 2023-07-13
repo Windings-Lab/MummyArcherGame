@@ -1,11 +1,11 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 
-#include "../Public/WeaponComponent.h"
+#include "WeaponComponent.h"
 
 #include "BowPowerWidget.h"
-#include "../Public/BasicCharacter.h"
-#include "../Public/ArrowProjectile.h"
+#include "FirstPersonCharacter.h"
+#include "ArrowProjectile.h"
 #include "GameFramework/PlayerController.h"
 #include "Camera/PlayerCameraManager.h"
 #include "EnhancedInputComponent.h"
@@ -150,7 +150,7 @@ void UWeaponComponent::BeginPlay()
 	}
 }
 
-void UWeaponComponent::AttachWeapon(ABasicCharacter* TargetCharacter)
+void UWeaponComponent::AttachWeapon(AFirstPersonCharacter* TargetCharacter)
 {
 	Character = TargetCharacter;
 	if (Character == nullptr)

@@ -5,10 +5,10 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
-#include "BasicCharacter.generated.h"
+#include "FirstPersonCharacter.generated.h"
 
  UCLASS(config=Game)
-class ABasicCharacter : public ACharacter
+class AFirstPersonCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
@@ -33,7 +33,7 @@ class ABasicCharacter : public ACharacter
  	class UInputAction* FocusAction;
 	
 public:
-	ABasicCharacter();
+	AFirstPersonCharacter();
 
 protected:
 	virtual void BeginPlay();

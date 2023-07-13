@@ -1,15 +1,15 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "../Public/ArrowProjectile.h"
+#include "ArrowProjectile.h"
 
-#include "BasicCharacter.h"
+#include "FirstPersonCharacter.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
 void AArrowProjectile::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
 
-	auto* PlayerOwner = Cast<ABasicCharacter>(GetOwner());
+	auto* PlayerOwner = Cast<AFirstPersonCharacter>(GetOwner());
 	if(PlayerOwner)
 	{
 		CollisionComp->IgnoreActorWhenMoving(PlayerOwner, true);
