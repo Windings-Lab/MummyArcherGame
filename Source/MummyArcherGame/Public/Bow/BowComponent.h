@@ -6,33 +6,6 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "BowComponent.generated.h"
 
-USTRUCT(BlueprintType)
-struct FFireAction
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	class UInputAction* FireAction;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	float TimeUntilMaxPower;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	float TimeToForceShoot;
-};
-
-USTRUCT(BlueprintType)
-struct FFocusAction
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	class UInputAction* FocusAction;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TSubclassOf<UUserWidget> SightWidgetClass;
-};
-
 UCLASS(Blueprintable, BlueprintType, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class MUMMYARCHERGAME_API UBowComponent : public UStaticMeshComponent
 {
@@ -42,29 +15,38 @@ class MUMMYARCHERGAME_API UBowComponent : public UStaticMeshComponent
 
 public:
 	UFUNCTION(BlueprintCallable, Category=Weapon)
-	void AttachWeapon(ACharacter* TargetCharacter);
+	void AttachBowToCharacter(class AMummyCharacter* TargetCharacter);
 
 public:
-	UPROPERTY(EditDefaultsOnly, Category=Weapon)
+	UPROPERTY(EditDefaultsOnly, Category=BowSettings)
 	TSubclassOf<class AArrowProjectile> ProjectileClass;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=BowSettings)
+	float ArrowMaxSpeed;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=BowSettings)
+	float ArrowMinSpeed;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=BowSettings)
+	float TimeUntilMaxPower;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=BowSettings)
+	float ArrowGravityScale;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="BowSettings|Widgets")
 	TSubclassOf<UUserWidget> BowPowerWidgetClass;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="BowSettings|Widgets")
+	TSubclassOf<UUserWidget> SightWidgetClass;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input)
 	class UInputMappingContext* FireMappingContext;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=Input)
-	FFireAction FireActionStruct;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Input)
+	class UInputAction* BowFireAction;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=Weapon)
-	float ArrowMaxSpeed;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=Weapon)
-	float ArrowMinSpeed;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=Input)
-	FFocusAction FocusActionStruct;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category=Input)
+	class UInputAction* BowFocusAction;
 
 protected:
 
@@ -76,30 +58,33 @@ protected:
 
 private:
 	// Action functions
-	UFUNCTION(BlueprintCallable, Category=Input)
-	void FireButtonHolding(const FInputActionInstance& ActionInstance);
+	UFUNCTION()
+	void Focus(const struct FInputActionValue& Value);
 	
-	UFUNCTION(BlueprintCallable, Category=Input)
+	UFUNCTION()
+	void FireButtonHolding(const struct FInputActionInstance& ActionInstance);
+	
+	UFUNCTION()
 	void FireButtonPresses(const FInputActionInstance& ActionInstance);
 	
-	UFUNCTION(BlueprintCallable, Category=Input)
+	UFUNCTION()
 	void Fire(const FInputActionInstance& ActionInstance);
 
-	UFUNCTION(BlueprintCallable, Category=Input)
+	UFUNCTION()
 	void FireButtonReleased(const FInputActionInstance& ActionInstance);
-	
-	UFUNCTION(BlueprintCallable, Category=Input)
-	void Focus(const FInputActionValue& Value);
 
 	//
+	FTransform CalculateArrowTransform();
 	float CalculateArrowSpeed(float MinPower, float MaxPower, float HoldTime) const;
-	FTransform CalculateArrowTransform() const;
-	void CreateArrow(UWorld* const World, float HoldTime);
-	void BowTraceLine(UWorld* const World);
+
+	void PredictArrowPath(UWorld* const World, struct FPredictProjectilePathResult& ProjectilePathResult);
+	void CreateArrow(UWorld* const World);
+
+	void BowTraceLine(UWorld* const World, double Distance, bool DrawTrace, FHitResult& HitResult);
 
 private:
 	UPROPERTY()
-	class ACharacter* Character;
+	class AMummyCharacter* Character;
 	
 	UPROPERTY()
 	UUserWidget* SightWidget;
@@ -107,7 +92,7 @@ private:
 	class UBowPowerWidget* BowPowerWidget;
 	
 	float PowerScale;
-
-	FVector CrosshairLocation;
+	
+	FVector InitialArrowDirection;
 	FVector ImpactPoint;
 };

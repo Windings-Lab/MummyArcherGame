@@ -6,25 +6,57 @@
 #include "Bow/Widgets/BowPowerWidget.h"
 #include "Bow/ArrowProjectile.h"
 #include "GameFramework/PlayerController.h"
-#include "Camera/PlayerCameraManager.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Blueprint/UserWidget.h"
-#include "GameFramework/Character.h"
+#include "Camera/CameraComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Mummy/MummyCharacter.h"
 
 // Sets default values for this component's properties
 UBowComponent::UBowComponent()
 {
-	FireActionStruct.TimeUntilMaxPower = 3.f;
-	FireActionStruct.TimeToForceShoot  = 6.f;
+	TimeUntilMaxPower = 3.f;
 
 	ArrowMaxSpeed = 10000.f;
 	ArrowMinSpeed = 500.f;
+	ArrowGravityScale = 1.f;
 }
 
+void UBowComponent::Focus(const FInputActionValue& Value)
+{
+	bool Focused = Value.Get<bool>();
+	auto* Camera = Character->GetFollowCamera();
+	if(Focused)
+	{
+
+		Camera->SetFieldOfView(30.f);
+		if(!SightWidget) return;
+		SightWidget->AddToViewport();
+	}
+	else
+	{
+		Camera->SetFieldOfView(90.f);
+		if(!SightWidget) return;
+		SightWidget->AddToViewport();
+	}
+}
+
+void UBowComponent::FireButtonHolding(const FInputActionInstance& ActionInstance)
+{
+	UWorld* const World = GetWorld(); 
+	if (!World) return;
+	
+	PowerScale = CalculateArrowSpeed(ArrowMinSpeed, ArrowMaxSpeed, ActionInstance.GetElapsedTime());
+	//PowerScale = 4000.f;
+	
+	FPredictProjectilePathResult ProjectilePathResult;
+	PredictArrowPath(World, ProjectilePathResult);
+	
+	if(BowPowerWidget) BowPowerWidget->SetPower(PowerScale, ArrowMinSpeed, ArrowMaxSpeed);
+}
 
 void UBowComponent::FireButtonPresses(const FInputActionInstance& ActionInstance)
 {
@@ -39,29 +71,8 @@ void UBowComponent::Fire(const FInputActionInstance& ActionInstance)
 	
 	UWorld* const World = GetWorld(); 
 	if (!World) return;
-
-	BowTraceLine(World);
-	CreateArrow(World, ActionInstance.GetElapsedTime());
-}
-
-void UBowComponent::BowTraceLine(UWorld* const World)
-{
-	auto* PlayerCameraManager = UGameplayStatics::GetPlayerCameraManager(World, 0);
-	FVector TraceStartLocation = PlayerCameraManager->K2_GetActorLocation();
-
-	FVector CameraForwardVector = PlayerCameraManager->GetActorForwardVector();
-	FVector TraceEndLocation = TraceStartLocation + CameraForwardVector * FVector(15000, 15000, 15000);
-	ImpactPoint = TraceEndLocation;
 	
-	FHitResult HitResult;
-	FCollisionQueryParams CollisionQueryParams;
-	CollisionQueryParams.AddIgnoredActor(Character);
-	World->LineTraceSingleByChannel(HitResult, TraceStartLocation, TraceEndLocation, ECC_Visibility, CollisionQueryParams);
-
-	if(HitResult.bBlockingHit)
-	{
-		ImpactPoint = HitResult.ImpactPoint;
-	}
+	CreateArrow(World);
 }
 
 void UBowComponent::FireButtonReleased(const FInputActionInstance& ActionInstance)
@@ -69,67 +80,73 @@ void UBowComponent::FireButtonReleased(const FInputActionInstance& ActionInstanc
 	if(BowPowerWidget) BowPowerWidget->RemoveFromParent();
 }
 
-void UBowComponent::FireButtonHolding(const FInputActionInstance& ActionInstance)
-{
-	BowTraceLine(GetWorld());
-	PowerScale = CalculateArrowSpeed(ArrowMinSpeed, ArrowMaxSpeed, ActionInstance.GetElapsedTime());
-	FTransform SpawnTransform	= CalculateArrowTransform();
-	FVector SpawnLocation		= SpawnTransform.GetLocation();
-	FRotator SpawnRotation		= SpawnTransform.Rotator();
-
-	FPredictProjectilePathParams ProjectilePathParams = FPredictProjectilePathParams(
-		10.f
-		, SpawnLocation
-		, SpawnRotation.Vector() * PowerScale,
-		10.f
-		, ECC_WorldStatic, GetOwner());
-	ProjectilePathParams.DrawDebugType = EDrawDebugTrace::Type::ForDuration;
-	ProjectilePathParams.DrawDebugTime = 0.f;
-	ProjectilePathParams.SimFrequency = 30.f;
-	ProjectilePathParams.bTraceComplex = false;
-	ProjectilePathParams.OverrideGravityZ = -980;
-
-	FPredictProjectilePathResult ProjectilePathResult;
-
-	UGameplayStatics::PredictProjectilePath(GetWorld(), ProjectilePathParams, ProjectilePathResult);
-
-	if(BowPowerWidget) BowPowerWidget->SetPower(PowerScale, ArrowMinSpeed, ArrowMaxSpeed);
-}
-
-float UBowComponent::CalculateArrowSpeed(float MinPower, float MaxPower, float HoldTime) const
-{
-	float Power;
-	const float PowerDifference = MaxPower - MinPower;
-	if(HoldTime <= FireActionStruct.TimeUntilMaxPower)
-	{
-		Power =  PowerDifference * HoldTime / FireActionStruct.TimeUntilMaxPower + MinPower;
-	}
-	else if(HoldTime <= FireActionStruct.TimeToForceShoot)
-	{
-		float TToShoot = FireActionStruct.TimeToForceShoot - FireActionStruct.TimeUntilMaxPower;
-		float T = TToShoot - (HoldTime - FireActionStruct.TimeUntilMaxPower);
-		Power = PowerDifference * T / TToShoot + MinPower;
-	}
-	else
-	{
-		Power = MinPower;
-	}
-	
-	return Power;
-}
-
-FTransform UBowComponent::CalculateArrowTransform() const
+FTransform UBowComponent::CalculateArrowTransform()
 {
 	FTransform Transform = GetSocketTransform(TEXT("arrow_socket"));
-	Transform.SetScale3D(UE::Math::TVector<double>(1.f, 1.f, 1.f));
+	Transform.SetScale3D(FVector::One());
 	Transform.SetRotation(UKismetMathLibrary::MakeRotFromX(ImpactPoint - Transform.GetLocation()).Quaternion());
 
 	return Transform;
 }
 
-void UBowComponent::CreateArrow(UWorld* const World, const float HoldTime)
+float UBowComponent::CalculateArrowSpeed(float MinPower, float MaxPower, const float HoldTime) const
 {
-	const FTransform SpawnTransform = CalculateArrowTransform();
+	float Power;
+	const float PowerDifference = MaxPower - MinPower;
+	if(HoldTime <= TimeUntilMaxPower)
+	{
+		Power =  PowerDifference * HoldTime / TimeUntilMaxPower + MinPower;
+	}
+	else
+	{
+		Power = ArrowMaxSpeed;
+	}
+	
+	return Power;
+}
+
+void UBowComponent::PredictArrowPath(UWorld* const World, FPredictProjectilePathResult& ProjectilePathResult)
+{
+	FHitResult TraceLineHitResult;
+	BowTraceLine(World, 10000.0, false, TraceLineHitResult);
+	
+	FTransform SpawnTransform	= CalculateArrowTransform();
+	FVector SpawnLocation		= SpawnTransform.GetLocation();
+	
+	FVector Velocity = FVector::Zero();
+	FCollisionResponseParams CollisionResponseParams;
+	CollisionResponseParams.CollisionResponse.SetResponse(ECC_Visibility, ECR_Block);
+		
+	UGameplayStatics::SuggestProjectileVelocity(World, Velocity, SpawnLocation, ImpactPoint, ArrowMaxSpeed
+	, false, 2
+	, -980 * ArrowGravityScale
+	, ESuggestProjVelocityTraceOption::Type::DoNotTrace
+	, CollisionResponseParams
+	, {Character}
+	, false);
+	
+	FPredictProjectilePathParams ProjectilePathParams = FPredictProjectilePathParams(
+		2.f
+		, SpawnLocation
+		, Velocity.GetSafeNormal() * PowerScale,
+		10.f
+		, ECC_Visibility, GetOwner());
+	ProjectilePathParams.DrawDebugType = EDrawDebugTrace::Type::ForDuration;
+	ProjectilePathParams.DrawDebugTime = 0.f;
+	ProjectilePathParams.SimFrequency = 30.f;
+	ProjectilePathParams.bTraceComplex = false;
+	ProjectilePathParams.OverrideGravityZ = -980 * ArrowGravityScale;
+
+	UGameplayStatics::PredictProjectilePath(GetWorld(), ProjectilePathParams, ProjectilePathResult);
+	InitialArrowDirection = ProjectilePathResult.PathData[0].Velocity;
+}
+
+// DrawDebugSphere(World, SocketLocation, 9.f, 8, FColor::Yellow, false, 5);
+
+void UBowComponent::CreateArrow(UWorld* const World)
+{
+	FTransform SpawnTransform = CalculateArrowTransform();
+	SpawnTransform.SetRotation(InitialArrowDirection.ToOrientationQuat());
 
 	auto* Arrow = World->SpawnActorDeferred<AArrowProjectile>(ProjectileClass
 															  , SpawnTransform
@@ -139,35 +156,43 @@ void UBowComponent::CreateArrow(UWorld* const World, const float HoldTime)
 			
 	auto* ArrowMovement = Arrow->GetProjectileMovement();
 	ArrowMovement->MaxSpeed = ArrowMaxSpeed;
-	ArrowMovement->InitialSpeed = CalculateArrowSpeed(ArrowMinSpeed, ArrowMaxSpeed, HoldTime);
+	ArrowMovement->InitialSpeed = InitialArrowDirection.Length();
+	ArrowMovement->ProjectileGravityScale = ArrowGravityScale;
 	UGameplayStatics::FinishSpawningActor(Arrow, SpawnTransform);
 }
 
-void UBowComponent::Focus(const FInputActionValue& Value)
+void UBowComponent::BowTraceLine(UWorld* const World, double Distance, bool DrawTrace, FHitResult& HitResult)
 {
-	if(!SightWidget) return;
-	auto* PlayerCameraManager = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
+	const auto* Camera = Character->GetFollowCamera();
+	const FVector CameraForwardVector = Camera->GetForwardVector();
 	
-	bool Focused = Value.Get<bool>();
-	if(Focused)
+	const FVector CameraLocation = Camera->GetComponentLocation();
+
+	FVector TraceStartLocation = CameraLocation;
+	const FVector TraceEndLocation = TraceStartLocation + CameraForwardVector * Distance;
+	
+	FCollisionQueryParams CollisionQueryParams;
+	CollisionQueryParams.AddIgnoredActor(Character);
+
+	if(DrawTrace)
 	{
-		SightWidget->AddToViewport();
-		PlayerCameraManager->SetFOV(60.f);
+		FName TraceTag = FName(TEXT("CharacterTraceTag"));
+		CollisionQueryParams.TraceTag = TraceTag;
+		World->DebugDrawTraceTag = TraceTag;
 	}
-	else
-	{
-		SightWidget->RemoveFromParent();
-		PlayerCameraManager->SetFOV(90.f);
-	}
+	
+	World->LineTraceSingleByChannel(HitResult, TraceStartLocation, TraceEndLocation, ECC_Visibility, CollisionQueryParams);
+
+	ImpactPoint = HitResult.bBlockingHit ? HitResult.ImpactPoint : TraceEndLocation;
 }
 
 void UBowComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	if(FocusActionStruct.SightWidgetClass)
+	if(SightWidgetClass)
 	{
-		SightWidget = CreateWidget<UUserWidget>(GetWorld(), FocusActionStruct.SightWidgetClass);
+		SightWidget = CreateWidget<UUserWidget>(GetWorld(), SightWidgetClass);
 	}
 
 	if(BowPowerWidgetClass)
@@ -176,13 +201,11 @@ void UBowComponent::BeginPlay()
 	}
 }
 
-void UBowComponent::AttachWeapon(ACharacter* TargetCharacter)
+void UBowComponent::AttachBowToCharacter(AMummyCharacter* TargetCharacter)
 {
+	if (!TargetCharacter) return;
+
 	Character = TargetCharacter;
-	if (Character == nullptr)
-	{
-		return;
-	}
 
 	// Set up action bindings
 	if (APlayerController* PlayerController = Cast<APlayerController>(Character->GetController()))
@@ -195,23 +218,20 @@ void UBowComponent::AttachWeapon(ACharacter* TargetCharacter)
 
 		if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerController->InputComponent))
 		{
-			EnhancedInputComponent->BindAction(FireActionStruct.FireAction, ETriggerEvent::Started, this, &UBowComponent::FireButtonPresses);
-			EnhancedInputComponent->BindAction(FireActionStruct.FireAction, ETriggerEvent::Triggered, this, &UBowComponent::Fire);
-			EnhancedInputComponent->BindAction(FireActionStruct.FireAction, ETriggerEvent::Completed, this, &UBowComponent::FireButtonReleased);
-			EnhancedInputComponent->BindAction(FireActionStruct.FireAction, ETriggerEvent::Canceled, this, &UBowComponent::FireButtonReleased);
-			EnhancedInputComponent->BindAction(FireActionStruct.FireAction, ETriggerEvent::Ongoing, this, &UBowComponent::FireButtonHolding);
+			EnhancedInputComponent->BindAction(BowFireAction, ETriggerEvent::Started, this, &UBowComponent::FireButtonPresses);
+			EnhancedInputComponent->BindAction(BowFireAction, ETriggerEvent::Triggered, this, &UBowComponent::Fire);
+			EnhancedInputComponent->BindAction(BowFireAction, ETriggerEvent::Completed, this, &UBowComponent::FireButtonReleased);
+			EnhancedInputComponent->BindAction(BowFireAction, ETriggerEvent::Canceled, this, &UBowComponent::FireButtonReleased);
+			EnhancedInputComponent->BindAction(BowFireAction, ETriggerEvent::Ongoing, this, &UBowComponent::FireButtonHolding);
 			
-			EnhancedInputComponent->BindAction(FocusActionStruct.FocusAction, ETriggerEvent::Triggered, this, &UBowComponent::Focus);
+			EnhancedInputComponent->BindAction(BowFocusAction, ETriggerEvent::Triggered, this, &UBowComponent::Focus);
 		}
 	}
 }
 
 void UBowComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	if (Character == nullptr)
-	{
-		return;
-	}
+	if (!Character) return;
 
 	if (APlayerController* PlayerController = Cast<APlayerController>(Character->GetController()))
 	{
