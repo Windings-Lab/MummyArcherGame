@@ -50,7 +50,6 @@ void UBowComponent::FireButtonHolding(const FInputActionInstance& ActionInstance
 	if (!World) return;
 	
 	PowerScale = CalculateArrowSpeed(ArrowMinSpeed, ArrowMaxSpeed, ActionInstance.GetElapsedTime());
-	//PowerScale = 4000.f;
 	
 	FPredictProjectilePathResult ProjectilePathResult;
 	PredictArrowPath(World, ProjectilePathResult);
@@ -91,16 +90,9 @@ FTransform UBowComponent::CalculateArrowTransform()
 
 float UBowComponent::CalculateArrowSpeed(float MinPower, float MaxPower, const float HoldTime) const
 {
-	float Power;
+	const float ClampedTime = FMath::Clamp(HoldTime, 0.f, TimeUntilMaxPower);
 	const float PowerDifference = MaxPower - MinPower;
-	if(HoldTime <= TimeUntilMaxPower)
-	{
-		Power =  PowerDifference * HoldTime / TimeUntilMaxPower + MinPower;
-	}
-	else
-	{
-		Power = ArrowMaxSpeed;
-	}
+	float Power = (PowerDifference * ClampedTime / TimeUntilMaxPower) + MinPower;
 	
 	return Power;
 }

@@ -21,12 +21,11 @@ AArrowProjectile::AArrowProjectile()
 	
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileComp"));
 	ProjectileMovement->UpdatedComponent = Arrow;
-	ProjectileMovement->InitialSpeed = 1000.f;
-	ProjectileMovement->MaxSpeed = 3000.f;
+	ProjectileMovement->InitialSpeed = 0.f;
+	ProjectileMovement->MaxSpeed = 15000.f;
 	ProjectileMovement->bRotationFollowsVelocity = true;
 	ProjectileMovement->bShouldBounce = false;
-
-	// Die after 3 seconds by default
+	
 	InitialLifeSpan = 5.f;
 }
 
