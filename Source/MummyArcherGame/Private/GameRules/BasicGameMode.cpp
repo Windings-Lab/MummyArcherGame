@@ -7,7 +7,7 @@ ABasicGameMode::ABasicGameMode()
 	: Super()
 {
 	// set default pawn class to our Blueprinted character
-	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnClassFinder(TEXT("/Game/MummyCharacter/Blueprints/BP_MummyCharacter.uasset"));
+	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnClassFinder(TEXT("/Game/Characters/Blueprints/BP_MummyCharacter"));
 	DefaultPawnClass = PlayerPawnClassFinder.Class;
 
 }
