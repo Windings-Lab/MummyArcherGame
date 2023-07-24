@@ -91,16 +91,9 @@ void UBowComponent::FireButtonHolding(const FInputActionInstance& ActionInstance
 {
 	UWorld* const World = GetWorld(); 
 	if (!World) return;
-
-	const auto* Camera = Pawn->GetFollowCamera();
-	const FVector CameraForwardVector = Camera->GetForwardVector();
-	const FVector CameraLocation = Camera->GetComponentLocation();
-
-	const FVector TraceStartLocation = CameraLocation;
-	const FVector TraceEndLocation = TraceStartLocation + CameraForwardVector * 10000.f;
-
+	
 	FHitResult TraceLineHitResult;
-	TraceLine(World, TraceStartLocation, TraceEndLocation, false, TraceLineHitResult);
+	FVector TraceImpactPoint = Pawn->TraceLine(World, false, TraceLineHitResult);
 
 	float BowPowerScale = ArrowCDO->CalculateArrowSpeed(ActionInstance.GetElapsedTime(), MaxBowTensionTime);
 	
@@ -108,7 +101,7 @@ void UBowComponent::FireButtonHolding(const FInputActionInstance& ActionInstance
 	ArrowCDO->PredictArrowPath(World
 		, InitialArrowDirection
 		, GetSocketLocation("arrow_socket")
-		, TraceLineHitResult.bBlockingHit ? TraceLineHitResult.ImpactPoint: TraceEndLocation
+		, TraceImpactPoint
 		, BowPowerScale
 		, ProjectilePathResult);
 	
@@ -157,19 +150,4 @@ void UBowComponent::CreateArrow(UWorld* const World)
 	auto* ArrowMovement = Arrow->GetProjectileMovement();
 	ArrowMovement->InitialSpeed = InitialArrowDirection.Length();
 	UGameplayStatics::FinishSpawningActor(Arrow, SpawnTransform);
-}
-
-void UBowComponent::TraceLine(UWorld* const World, const FVector& Start, const FVector& End, const bool DrawTrace, FHitResult& HitResult)
-{
-	FCollisionQueryParams CollisionQueryParams;
-	CollisionQueryParams.AddIgnoredActor(Pawn);
-
-	if(DrawTrace)
-	{
-		FName TraceTag = FName(TEXT("CharacterTraceTag"));
-		CollisionQueryParams.TraceTag = TraceTag;
-		World->DebugDrawTraceTag = TraceTag;
-	}
-	
-	World->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, CollisionQueryParams);
 }

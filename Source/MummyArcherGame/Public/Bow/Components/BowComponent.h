@@ -73,6 +73,4 @@ private:
 	//
 	FTransform CalculateArrowTransform();
 	void CreateArrow(UWorld* const World);
-
-	void TraceLine(UWorld* const World, const FVector& Start, const FVector& End, bool DrawTrace, FHitResult& HitResult);
 };

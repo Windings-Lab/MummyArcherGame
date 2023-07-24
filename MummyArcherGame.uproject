@@ -12,7 +12,8 @@
 				"GameplayCameras",
 				"EnhancedInput",
 				"UMG",
-				"Engine"
+				"Engine",
+				"CoreUObject"
 			]
 		}
 	],

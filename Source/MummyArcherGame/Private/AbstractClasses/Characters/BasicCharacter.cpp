@@ -65,6 +65,31 @@ void ABasicCharacter::BeginPlay()
 	Subsystem->AddMappingContext(DefaultMappingContext, 0);
 }
 
+
+FVector ABasicCharacter::TraceLine(UWorld* const World, bool DrawTrace, FHitResult& HitResult)
+{
+	const auto* Camera = GetFollowCamera();
+	const FVector CameraForwardVector = Camera->GetForwardVector();
+	const FVector CameraLocation = Camera->GetComponentLocation();
+
+	const FVector TraceStartLocation = CameraLocation;
+	const FVector TraceEndLocation = TraceStartLocation + CameraForwardVector * 10000.f;
+	
+	FCollisionQueryParams CollisionQueryParams;
+	CollisionQueryParams.AddIgnoredActor(this);
+
+	if(DrawTrace)
+	{
+		FName TraceTag = FName(TEXT("CharacterTraceTag"));
+		CollisionQueryParams.TraceTag = TraceTag;
+		World->DebugDrawTraceTag = TraceTag;
+	}
+	
+	World->LineTraceSingleByChannel(HitResult, TraceStartLocation, TraceEndLocation, ECC_Visibility, CollisionQueryParams);
+
+	return HitResult.bBlockingHit ? HitResult.ImpactPoint : TraceEndLocation;
+}
+
 void ABasicCharacter::Look(const FInputActionValue& Value)
 {
 	if (Controller == nullptr) return;
@@ -74,7 +99,6 @@ void ABasicCharacter::Look(const FInputActionValue& Value)
 	AddControllerYawInput(LookAxisVector.X);
 	AddControllerPitchInput(LookAxisVector.Y);
 }
-
 
 void ABasicCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
