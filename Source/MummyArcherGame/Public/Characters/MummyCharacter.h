@@ -3,50 +3,38 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
+#include "AbstractClasses/Characters/BasicCharacter.h"
+#include "AbstractClasses/Characters/Interfaces/CanJump.h"
+#include "AbstractClasses/Characters/Interfaces/CanMove.h"
 #include "MummyCharacter.generated.h"
 
 UCLASS()
-class MUMMYARCHERGAME_API AMummyCharacter : public ACharacter
+class MUMMYARCHERGAME_API AMummyCharacter : public ABasicCharacter, public ICanMove, public ICanJump
 {
 	GENERATED_BODY()
 
 public:
 	AMummyCharacter();
 
-	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
-	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
-
 protected:
-	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
-	
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
-	USpringArmComponent* CameraBoom;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
-	UCameraComponent* FollowCamera;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
-	class UBowComponent* Bow;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Movement", meta = (AllowPrivateAccess = "true"))
-	class UInputMappingContext* MovementMappingContext;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Movement", meta = (AllowPrivateAccess = "true"))
-	class UInputAction* JumpAction;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Movement", meta = (AllowPrivateAccess = "true"))
-	UInputAction* MoveAction;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Movement", meta = (AllowPrivateAccess = "true"))
-	UInputAction* LookAction;
+		class UBowComponent* Bow;
 
-	// Action functions
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Movement", meta = (AllowPrivateAccess = "true"))
+		UInputAction* MoveAction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Movement", meta = (AllowPrivateAccess = "true"))
+		class UInputAction* JumpAction;
+
 	UFUNCTION()
-	void Move(const struct FInputActionValue& Value);
+		virtual void Move(const FInputActionValue& Value) override;
 	UFUNCTION()
-	void Look(const FInputActionValue& Value);
+		virtual UInputAction* GetMoveAction() override;
+	UFUNCTION()
+		virtual UInputAction* GetJumpAction() override;
 };

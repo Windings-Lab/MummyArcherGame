@@ -3,20 +3,49 @@
 
 #include "Bow/Components/BowComponent.h"
 
-#include "Bow/Widgets/BowPowerWidget.h"
-#include "AbstractClasses/Arrow/BasicArrowProjectile.h"
-#include "GameFramework/PlayerController.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Bow/Widgets/BowPowerWidget.h"
+#include "AbstractClasses/Arrow/BasicArrowProjectile.h"
+#include "AbstractClasses/Characters/BasicCharacter.h"
 #include "Blueprint/UserWidget.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "Characters/MummyCharacter.h"
+
+UBowComponent::UBowComponent()
+{
+	bWantsInitializeComponent = true;
+	MaxBowTensionTime = .5f;
+}
 
 void UBowComponent::InitializeComponent()
 {
 	Super::InitializeComponent();
+
+	ABasicCharacter* BasicPawn = Cast<ABasicCharacter>(GetOwner());
+	if(!BasicPawn) return;
+
+	Pawn = BasicPawn;
+
+	if(ArrowProjectileClass)
+	{
+		ArrowCDO = Cast<ABasicArrowProjectile>(ArrowProjectileClass->ClassDefaultObject);
+	}
+}
+
+void UBowComponent::SetupPlayerInput(UInputComponent* PlayerInputComponent)
+{
+	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
+	{
+		EnhancedInputComponent->BindAction(BowFireAction, ETriggerEvent::Started, this, &UBowComponent::FireButtonPressed);
+		EnhancedInputComponent->BindAction(BowFireAction, ETriggerEvent::Triggered, this, &UBowComponent::Fire);
+		EnhancedInputComponent->BindAction(BowFireAction, ETriggerEvent::Completed, this, &UBowComponent::FireButtonReleased);
+		EnhancedInputComponent->BindAction(BowFireAction, ETriggerEvent::Canceled, this, &UBowComponent::FireButtonReleased);
+		EnhancedInputComponent->BindAction(BowFireAction, ETriggerEvent::Ongoing, this, &UBowComponent::FireButtonHolding);
+			
+		EnhancedInputComponent->BindAction(BowFocusAction, ETriggerEvent::Triggered, this, &UBowComponent::Focus);
+	}
 
 	if(SightWidgetClass)
 	{
@@ -27,17 +56,16 @@ void UBowComponent::InitializeComponent()
 	{
 		BowPowerWidget = Cast<UBowPowerWidget>(CreateWidget<UUserWidget>(GetWorld(), BowPowerWidgetClass));
 	}
-
-	if(ArrowProjectileClass)
-	{
-		ArrowCDO = Cast<ABasicArrowProjectile>(ArrowProjectileClass->ClassDefaultObject);
-	}
 }
 
-UBowComponent::UBowComponent()
+void UBowComponent::AddBowMappingContext(UEnhancedInputLocalPlayerSubsystem* Subsystem, int Priority)
 {
-	bWantsInitializeComponent = true;
-	MaxBowTensionTime = .5f;
+	Subsystem->AddMappingContext(BowMappingContext, Priority);
+}
+
+void UBowComponent::RemoveBowMappingContext(UEnhancedInputLocalPlayerSubsystem* Subsystem)
+{
+	Subsystem->RemoveMappingContext(BowMappingContext);
 }
 
 void UBowComponent::Focus(const FInputActionValue& Value)
@@ -73,13 +101,15 @@ void UBowComponent::FireButtonHolding(const FInputActionInstance& ActionInstance
 
 	FHitResult TraceLineHitResult;
 	TraceLine(World, TraceStartLocation, TraceEndLocation, false, TraceLineHitResult);
+
+	float BowPowerScale = ArrowCDO->CalculateArrowSpeed(ActionInstance.GetElapsedTime(), MaxBowTensionTime);
 	
 	FPredictProjectilePathResult ProjectilePathResult;
 	ArrowCDO->PredictArrowPath(World
 		, InitialArrowDirection
 		, GetSocketLocation("arrow_socket")
 		, TraceLineHitResult.bBlockingHit ? TraceLineHitResult.ImpactPoint: TraceEndLocation
-		, ArrowCDO->CalculateArrowSpeed(ActionInstance.GetElapsedTime(), MaxBowTensionTime)
+		, BowPowerScale
 		, ProjectilePathResult);
 	
 	if(BowPowerWidget) BowPowerWidget->SetPower(BowPowerScale, ArrowCDO->GetMinSpeed(), ArrowCDO->GetMaxSpeed());
@@ -142,43 +172,4 @@ void UBowComponent::TraceLine(UWorld* const World, const FVector& Start, const F
 	}
 	
 	World->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, CollisionQueryParams);
-}
-
-void UBowComponent::AttachBowToCharacter(AMummyCharacter* TargetCharacter)
-{
-	if(!TargetCharacter) return;
-	
-	Pawn = TargetCharacter;
-
-	// Set up action bindings
-	if (APlayerController* PlayerController = Cast<APlayerController>(Pawn->GetController()))
-	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-		{
-			// Set the priority of the mapping to 1, so that it overrides the Jump action with the Fire action when using touch input
-			Subsystem->AddMappingContext(BowMappingContext, 1);
-		}
-
-		if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerController->InputComponent))
-		{
-			EnhancedInputComponent->BindAction(BowFireAction, ETriggerEvent::Started, this, &UBowComponent::FireButtonPressed);
-			EnhancedInputComponent->BindAction(BowFireAction, ETriggerEvent::Triggered, this, &UBowComponent::Fire);
-			EnhancedInputComponent->BindAction(BowFireAction, ETriggerEvent::Completed, this, &UBowComponent::FireButtonReleased);
-			EnhancedInputComponent->BindAction(BowFireAction, ETriggerEvent::Canceled, this, &UBowComponent::FireButtonReleased);
-			EnhancedInputComponent->BindAction(BowFireAction, ETriggerEvent::Ongoing, this, &UBowComponent::FireButtonHolding);
-			
-			EnhancedInputComponent->BindAction(BowFocusAction, ETriggerEvent::Triggered, this, &UBowComponent::Focus);
-		}
-	}
-}
-
-void UBowComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
-{
-	if (APlayerController* PlayerController = Cast<APlayerController>(Pawn->GetController()))
-	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-		{
-			Subsystem->RemoveMappingContext(BowMappingContext);
-		}
-	}
 }

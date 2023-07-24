@@ -13,18 +13,18 @@ class MUMMYARCHERGAME_API UBowComponent : public UStaticMeshComponent
 	
 public:
 	UBowComponent();
+
+	void SetupPlayerInput(UInputComponent* PlayerInputComponent);
 	
-	UFUNCTION(BlueprintCallable, Category=Weapon)
-		void AttachBowToCharacter(class AMummyCharacter* TargetCharacter);
+	void AddBowMappingContext(class UEnhancedInputLocalPlayerSubsystem* Subsystem, int Priority);
+	void RemoveBowMappingContext(class UEnhancedInputLocalPlayerSubsystem* Subsystem);
 
 protected:
 	virtual void InitializeComponent() override;
-	
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
 	UPROPERTY()
-		AMummyCharacter* Pawn;
+		class ABasicCharacter* Pawn;
 	
 	UPROPERTY(EditDefaultsOnly, Category=BowSettings, meta = (AllowPrivateAccess = "true"))
 		TSubclassOf<class ABasicArrowProjectile> ArrowProjectileClass;
@@ -34,6 +34,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=BowSettings, meta = (AllowPrivateAccess = "true"))
 		float MaxBowTensionTime;
 
+	//Player related properties
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="BowSettings|Widgets", meta = (AllowPrivateAccess = "true"))
 		TSubclassOf<UUserWidget> BowPowerWidgetClass;
 	UPROPERTY()
@@ -54,7 +55,6 @@ private:
 	UInputAction* BowFocusAction;
 	
 private:
-	float BowPowerScale;
 	FVector InitialArrowDirection;
 	
 private:
