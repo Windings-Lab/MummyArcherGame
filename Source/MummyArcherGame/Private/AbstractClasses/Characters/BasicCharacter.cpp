@@ -9,6 +9,9 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
+
+#define TRACE_CHARACTER ECC_GameTraceChannel2
 
 // Sets default values
 ABasicCharacter::ABasicCharacter()
@@ -74,18 +77,22 @@ FVector ABasicCharacter::TraceLine(UWorld* const World, bool DrawTrace, FHitResu
 
 	const FVector TraceStartLocation = CameraLocation;
 	const FVector TraceEndLocation = TraceStartLocation + CameraForwardVector * 10000.f;
+	const EDrawDebugTrace::Type DrawDebugTraceType = DrawTrace ? EDrawDebugTrace::Type::ForDuration : EDrawDebugTrace::Type::None;
 	
 	FCollisionQueryParams CollisionQueryParams;
 	CollisionQueryParams.AddIgnoredActor(this);
 
-	if(DrawTrace)
-	{
-		FName TraceTag = FName(TEXT("CharacterTraceTag"));
-		CollisionQueryParams.TraceTag = TraceTag;
-		World->DebugDrawTraceTag = TraceTag;
-	}
-	
-	World->LineTraceSingleByChannel(HitResult, TraceStartLocation, TraceEndLocation, ECC_Visibility, CollisionQueryParams);
+	UKismetSystemLibrary::LineTraceSingle(World
+		, TraceStartLocation, TraceEndLocation
+		, UEngineTypes::ConvertToTraceType(TRACE_CHARACTER)
+		, false
+		, {this}
+		, DrawDebugTraceType
+		, HitResult
+		, true
+		, FLinearColor::Green
+		, FLinearColor::Red
+		, 5.f);
 
 	return HitResult.bBlockingHit ? HitResult.ImpactPoint : TraceEndLocation;
 }

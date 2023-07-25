@@ -6,6 +6,8 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 
+#define TRACE_CHARACTER ECC_GameTraceChannel2
+
 ABasicArrowProjectile::ABasicArrowProjectile() 
 {
 	InitialLifeSpan = 5.f;
@@ -24,6 +26,7 @@ ABasicArrowProjectile::ABasicArrowProjectile()
 
 	BoxCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxCollider"));
 	BoxCollider->OnComponentBeginOverlap.AddDynamic(this, &ABasicArrowProjectile::OnArrowBeginOverlap);
+	BoxCollider->SetUseCCD(true);
 	BoxCollider->SetupAttachment(Arrow);
 	
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileComp"));
@@ -34,20 +37,26 @@ ABasicArrowProjectile::ABasicArrowProjectile()
 	ProjectileMovement->bShouldBounce = false;
 }
 
-void ABasicArrowProjectile::OnArrowBeginOverlap(UPrimitiveComponent* OverlappedComponent
-		, AActor* OtherActor
-		, UPrimitiveComponent* OtherComp
-		, int32 OtherBodyIndex
-		, bool bFromSweep
-		, const FHitResult & SweepResult)
+void ABasicArrowProjectile::OnConstruction(const FTransform& Transform)
 {
-	// Only add impulse and destroy projectile if we hit a physics
+	Super::OnConstruction(Transform);
+
+	ProjectileMovement->ProjectileGravityScale = GravityScale;
+	ProjectileMovement->MaxSpeed = MaxSpeed;
+}
+
+void ABasicArrowProjectile::OnArrowBeginOverlap(UPrimitiveComponent* OverlappedComponent
+                                                , AActor* OtherActor
+                                                , UPrimitiveComponent* OtherComp
+                                                , int32 OtherBodyIndex
+                                                , bool bFromSweep
+                                                , const FHitResult & SweepResult)
+{
 	if ((OtherActor != nullptr) && (OtherActor != this) && (OtherComp != nullptr))
 	{
 		ProjectileMovement->StopMovementImmediately();
 		ProjectileMovement->ProjectileGravityScale = 0.f;
-
-		// Arrow will be stuck with collided actor
+		
 		const FAttachmentTransformRules AttachmentTransformRules = FAttachmentTransformRules(EAttachmentRule::KeepWorld, true);
 		AttachToActor(OtherActor, AttachmentTransformRules);
 		BoxCollider->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
@@ -55,30 +64,31 @@ void ABasicArrowProjectile::OnArrowBeginOverlap(UPrimitiveComponent* OverlappedC
 }
 
 void ABasicArrowProjectile::PredictArrowPath(UWorld* const World
-                                           , FVector& VelocityDirection
-                                           , const FVector& SpawnLocation
-                                           , const FVector& EndLocation
-                                           , const float Speed
-                                           , FPredictProjectilePathResult& ProjectilePathResult) const
+											, FArrowParameters& ArrowParameters
+											, bool DrawArc
+											, FPredictProjectilePathResult& ProjectilePathResult) const
 {
-	FVector Velocity = FVector::Zero();
-	FCollisionResponseParams CollisionResponseParams;
-	CollisionResponseParams.CollisionResponse.SetResponse(ECC_Visibility, ECR_Block);
-		
-	UGameplayStatics::SuggestProjectileVelocity(World, Velocity, SpawnLocation, EndLocation, GetMaxSpeed()
-	, false, 2
-	, -980 * GetGravityScale()
-	, ESuggestProjVelocityTraceOption::Type::DoNotTrace
-	, CollisionResponseParams
-	, {GetOwner()}
-	, false);
+	if(GetGravityScale() == 0.f) return;
 	
+	FVector Velocity = ArrowParameters.ImpactPoint - ArrowParameters.SpawnLocation;
+		
+	FCollisionResponseParams CollisionResponseParams;
+	CollisionResponseParams.CollisionResponse.SetResponse(TRACE_CHARACTER, ECR_Block);
+		
+	UGameplayStatics::SuggestProjectileVelocity(World, Velocity, ArrowParameters.SpawnLocation, ArrowParameters.ImpactPoint, GetMaxSpeed()
+	                                            , false, 2
+	                                            , -980 * GetGravityScale()
+	                                            , ESuggestProjVelocityTraceOption::Type::DoNotTrace
+	                                            , CollisionResponseParams
+	                                            , {GetOwner()}
+	                                            , DrawArc);
+
 	FPredictProjectilePathParams ProjectilePathParams = FPredictProjectilePathParams(
 		2.f
-		, SpawnLocation
-		, Velocity.GetSafeNormal() * Speed,
+		, ArrowParameters.SpawnLocation
+		, Velocity.GetSafeNormal() * ArrowParameters.Speed,
 		10.f
-		, ECC_Visibility, GetOwner());
+		, TRACE_CHARACTER, GetOwner());
 	ProjectilePathParams.DrawDebugType = EDrawDebugTrace::Type::ForDuration;
 	ProjectilePathParams.DrawDebugTime = 0.f;
 	ProjectilePathParams.SimFrequency = 30.f;
@@ -86,9 +96,6 @@ void ABasicArrowProjectile::PredictArrowPath(UWorld* const World
 	ProjectilePathParams.OverrideGravityZ = -980 * GetGravityScale();
 
 	UGameplayStatics::PredictProjectilePath(World, ProjectilePathParams, ProjectilePathResult);
-
-	if(!ProjectilePathResult.PathData.IsEmpty())
-		VelocityDirection = ProjectilePathResult.PathData[0].Velocity;
 }
 
 float ABasicArrowProjectile::CalculateArrowSpeed(const float BowTensionTime, const float BowMaxTensionTime) const
@@ -98,4 +105,34 @@ float ABasicArrowProjectile::CalculateArrowSpeed(const float BowTensionTime, con
 	float Power = (PowerDifference * ClampedTime / BowMaxTensionTime) + GetMinSpeed();
 	
 	return Power;
+}
+
+void ABasicArrowProjectile::CreateArrow(UWorld* const World, FArrowParameters& ArrowParameters, const TSubclassOf<ABasicArrowProjectile>& ArrowProjectileClass) const
+{
+	FPredictProjectilePathResult ProjectilePathResult;
+	PredictArrowPath(World, ArrowParameters, false, ProjectilePathResult);
+
+	FVector InitialVelocityDirection = ArrowParameters.ImpactPoint - ArrowParameters.SpawnLocation;
+	if(GetGravityScale() != 0.f && !ProjectilePathResult.PathData.IsEmpty())
+	{
+		InitialVelocityDirection = ProjectilePathResult.PathData[0].Velocity;
+		ProjectileMovement->InitialSpeed = InitialVelocityDirection.Length();
+	}
+	else
+	{
+		InitialVelocityDirection = InitialVelocityDirection.GetSafeNormal();
+		ProjectileMovement->InitialSpeed = ArrowParameters.Speed;
+	}
+
+	FActorSpawnParameters ActorSpawnParameters;
+	ActorSpawnParameters.Owner = GetOwner();
+	ActorSpawnParameters.Instigator = GetInstigator();
+	ActorSpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+	FTransform SpawnTransform;
+	SpawnTransform.SetLocation(ArrowParameters.SpawnLocation);
+	SpawnTransform.SetScale3D(FVector::One());
+	SpawnTransform.SetRotation(InitialVelocityDirection.ToOrientationQuat());
+	
+	World->SpawnActor<ABasicArrowProjectile>(ArrowProjectileClass, SpawnTransform, ActorSpawnParameters);
 }

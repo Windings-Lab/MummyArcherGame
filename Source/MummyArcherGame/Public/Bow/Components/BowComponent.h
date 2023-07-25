@@ -33,8 +33,7 @@ private:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=BowSettings, meta = (AllowPrivateAccess = "true"))
 		float MaxBowTensionTime;
-
-	//Player related properties
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="BowSettings|Widgets", meta = (AllowPrivateAccess = "true"))
 		TSubclassOf<UUserWidget> BowPowerWidgetClass;
 	UPROPERTY()
@@ -55,9 +54,6 @@ private:
 	UInputAction* BowFocusAction;
 	
 private:
-	FVector InitialArrowDirection;
-	
-private:
 	// Action functions
 	UFUNCTION()
 		void Focus(const struct FInputActionValue& Value);
@@ -66,11 +62,7 @@ private:
 	UFUNCTION()
 		void FireButtonPressed();
 	UFUNCTION()
-		void Fire();
+		void Fire(const struct FInputActionInstance& ActionInstance);
 	UFUNCTION()
 		void FireButtonReleased();
-	
-	//
-	FTransform CalculateArrowTransform();
-	void CreateArrow(UWorld* const World);
 };

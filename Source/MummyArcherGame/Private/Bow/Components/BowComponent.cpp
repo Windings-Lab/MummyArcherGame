@@ -10,7 +10,6 @@
 #include "AbstractClasses/Characters/BasicCharacter.h"
 #include "Blueprint/UserWidget.h"
 #include "Camera/CameraComponent.h"
-#include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 UBowComponent::UBowComponent()
@@ -94,18 +93,16 @@ void UBowComponent::FireButtonHolding(const FInputActionInstance& ActionInstance
 	
 	FHitResult TraceLineHitResult;
 	FVector TraceImpactPoint = Pawn->TraceLine(World, false, TraceLineHitResult);
-
-	float BowPowerScale = ArrowCDO->CalculateArrowSpeed(ActionInstance.GetElapsedTime(), MaxBowTensionTime);
 	
 	FPredictProjectilePathResult ProjectilePathResult;
-	ArrowCDO->PredictArrowPath(World
-		, InitialArrowDirection
-		, GetSocketLocation("arrow_socket")
-		, TraceImpactPoint
-		, BowPowerScale
-		, ProjectilePathResult);
+	FArrowParameters ArrowParameters;
+	ArrowParameters.ImpactPoint = TraceImpactPoint;
+	ArrowParameters.SpawnLocation = GetSocketLocation("arrow_socket");
+	ArrowParameters.Speed = ArrowCDO->CalculateArrowSpeed(ActionInstance.GetElapsedTime(), MaxBowTensionTime);
 	
-	if(BowPowerWidget) BowPowerWidget->SetPower(BowPowerScale, ArrowCDO->GetMinSpeed(), ArrowCDO->GetMaxSpeed());
+	ArrowCDO->PredictArrowPath(World,ArrowParameters, false, ProjectilePathResult);
+	
+	if(BowPowerWidget) BowPowerWidget->SetPower(ArrowParameters.Speed, ArrowCDO->GetMinSpeed(), ArrowCDO->GetMaxSpeed());
 }
 
 void UBowComponent::FireButtonPressed()
@@ -113,41 +110,22 @@ void UBowComponent::FireButtonPressed()
 	if(BowPowerWidget) BowPowerWidget->AddToViewport();
 }
 
-void UBowComponent::Fire()
+void UBowComponent::Fire(const FInputActionInstance& ActionInstance)
 {
 	UWorld* const World = GetWorld(); 
 	if (!World) return;
+
+	FHitResult TraceLineHitResult;
+
+	FArrowParameters ArrowParameters;
+	ArrowParameters.SpawnLocation = GetSocketLocation("arrow_socket");
+	ArrowParameters.ImpactPoint = Pawn->TraceLine(World, false, TraceLineHitResult);
+	ArrowParameters.Speed = ArrowCDO->CalculateArrowSpeed(ActionInstance.GetElapsedTime(), MaxBowTensionTime);
 	
-	CreateArrow(World);
+	ArrowCDO->CreateArrow(World, ArrowParameters, ArrowProjectileClass);
 }
 
 void UBowComponent::FireButtonReleased()
 {
 	if(BowPowerWidget) BowPowerWidget->RemoveFromParent();
-}
-
-FTransform UBowComponent::CalculateArrowTransform()
-{
-	FTransform Transform = GetSocketTransform(TEXT("arrow_socket"));
-	Transform.SetScale3D(FVector::One());
-	Transform.SetRotation(InitialArrowDirection.ToOrientationQuat());
-
-	return Transform;
-}
-
-// DrawDebugSphere(World, SocketLocation, 9.f, 8, FColor::Yellow, false, 5);
-
-void UBowComponent::CreateArrow(UWorld* const World)
-{
-	const FTransform SpawnTransform = CalculateArrowTransform();
-
-	auto* Arrow = World->SpawnActorDeferred<ABasicArrowProjectile>(ArrowProjectileClass
-		, SpawnTransform
-		, Pawn
-		, nullptr
-		, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
-	
-	auto* ArrowMovement = Arrow->GetProjectileMovement();
-	ArrowMovement->InitialSpeed = InitialArrowDirection.Length();
-	UGameplayStatics::FinishSpawningActor(Arrow, SpawnTransform);
 }
