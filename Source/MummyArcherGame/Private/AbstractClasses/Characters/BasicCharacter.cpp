@@ -89,10 +89,10 @@ FVector ABasicCharacter::TraceLine(UWorld* const World, bool DrawTrace, FHitResu
 		, {this}
 		, DrawDebugTraceType
 		, HitResult
-		, true
+		, false
 		, FLinearColor::Green
 		, FLinearColor::Red
-		, 5.f);
+		, 0.f);
 
 	return HitResult.bBlockingHit ? HitResult.ImpactPoint : TraceEndLocation;
 }

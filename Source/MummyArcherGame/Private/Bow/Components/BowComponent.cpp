@@ -92,7 +92,7 @@ void UBowComponent::FireButtonHolding(const FInputActionInstance& ActionInstance
 	if (!World) return;
 	
 	FHitResult TraceLineHitResult;
-	FVector TraceImpactPoint = Pawn->TraceLine(World, false, TraceLineHitResult);
+	FVector TraceImpactPoint = Pawn->TraceLine(World, true, TraceLineHitResult);
 	
 	FPredictProjectilePathResult ProjectilePathResult;
 	FArrowParameters ArrowParameters;
