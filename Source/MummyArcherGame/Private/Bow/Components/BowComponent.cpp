@@ -10,6 +10,7 @@
 #include "AbstractClasses/Characters/BasicCharacter.h"
 #include "Blueprint/UserWidget.h"
 #include "Camera/CameraComponent.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 UBowComponent::UBowComponent()
@@ -88,19 +89,14 @@ void UBowComponent::Focus(const FInputActionValue& Value)
 
 void UBowComponent::FireButtonHolding(const FInputActionInstance& ActionInstance)
 {
-	UWorld* const World = GetWorld(); 
-	if (!World) return;
-	
 	FHitResult TraceLineHitResult;
-	FVector TraceImpactPoint = Pawn->TraceLine(World, true, TraceLineHitResult);
+	FVector TraceImpactPoint = Pawn->TraceLine(false, TraceLineHitResult);
 	
 	FPredictProjectilePathResult ProjectilePathResult;
-	FArrowParameters ArrowParameters;
-	ArrowParameters.ImpactPoint = TraceImpactPoint;
-	ArrowParameters.SpawnLocation = GetSocketLocation("arrow_socket");
-	ArrowParameters.Speed = ArrowCDO->CalculateArrowSpeed(ActionInstance.GetElapsedTime(), MaxBowTensionTime);
+	FArrowParameters ArrowParameters(ArrowProjectileClass, GetSocketTransform("arrow_socket"), TraceImpactPoint
+		, ArrowCDO->CalculateArrowSpeed(ActionInstance.GetElapsedTime(), MaxBowTensionTime));
 	
-	ArrowCDO->PredictArrowPath(World,ArrowParameters, false, ProjectilePathResult);
+	ArrowCDO->PredictArrowPath(GetWorld(),ArrowParameters, false, ProjectilePathResult);
 	
 	if(BowPowerWidget) BowPowerWidget->SetPower(ArrowParameters.Speed, ArrowCDO->GetMinSpeed(), ArrowCDO->GetMaxSpeed());
 }
@@ -112,17 +108,55 @@ void UBowComponent::FireButtonPressed()
 
 void UBowComponent::Fire(const FInputActionInstance& ActionInstance)
 {
-	UWorld* const World = GetWorld(); 
-	if (!World) return;
-
 	FHitResult TraceLineHitResult;
 
-	FArrowParameters ArrowParameters;
-	ArrowParameters.SpawnLocation = GetSocketLocation("arrow_socket");
-	ArrowParameters.ImpactPoint = Pawn->TraceLine(World, false, TraceLineHitResult);
-	ArrowParameters.Speed = ArrowCDO->CalculateArrowSpeed(ActionInstance.GetElapsedTime(), MaxBowTensionTime);
+	FArrowParameters ArrowParameters(ArrowProjectileClass, GetSocketTransform("arrow_socket")
+		, Pawn->TraceLine(false, TraceLineHitResult)
+		, ArrowCDO->CalculateArrowSpeed(ActionInstance.GetElapsedTime(), MaxBowTensionTime));
+
+	FPredictProjectilePathResult ProjectilePathResult;
+	ArrowCDO->PredictArrowPath(GetWorld(), ArrowParameters, false, ProjectilePathResult);
+
+	FVector InitialVelocityDirection = ArrowParameters.ImpactPoint - ArrowParameters.SpawnTransform.GetLocation();
+	float InitialSpeed = 0.f;
+	if(ArrowCDO->GetGravityScale() != 0.f && !ProjectilePathResult.PathData.IsEmpty())
+	{
+		InitialVelocityDirection = ProjectilePathResult.PathData[0].Velocity;
+		InitialSpeed = InitialVelocityDirection.Length();
+	}
+	else
+	{
+		InitialVelocityDirection = InitialVelocityDirection.GetSafeNormal();
+		InitialSpeed = ArrowParameters.Speed;
+	}
 	
-	ArrowCDO->CreateArrow(World, ArrowParameters, ArrowProjectileClass);
+	ArrowParameters.SpawnTransform.SetRotation(InitialVelocityDirection.ToOrientationQuat());
+	
+	if(Pawn->HasAuthority())
+	{
+		Multicast_Fire(ArrowParameters.SpawnTransform, InitialSpeed);
+	}
+	else
+	{
+		Server_Fire(ArrowParameters.SpawnTransform, InitialSpeed);
+	}
+}
+
+void UBowComponent::Server_Fire_Implementation(const FTransform& SpawnTransform, float InitialSpeed)
+{
+	Multicast_Fire(SpawnTransform, InitialSpeed);
+}
+
+void UBowComponent::Multicast_Fire_Implementation(const FTransform& SpawnTransform, float InitialSpeed)
+{
+	auto* Arrow = GetWorld()->SpawnActorDeferred<ABasicArrowProjectile>(ArrowProjectileClass
+		, SpawnTransform
+		, Pawn
+		, Pawn
+		, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
+
+	Arrow->GetProjectileMovement()->InitialSpeed = InitialSpeed;
+	UGameplayStatics::FinishSpawningActor(Arrow, SpawnTransform);
 }
 
 void UBowComponent::FireButtonReleased()

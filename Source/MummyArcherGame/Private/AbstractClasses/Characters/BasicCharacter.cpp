@@ -69,7 +69,7 @@ void ABasicCharacter::BeginPlay()
 }
 
 
-FVector ABasicCharacter::TraceLine(UWorld* const World, bool DrawTrace, FHitResult& HitResult)
+FVector ABasicCharacter::TraceLine(bool DrawTrace, FHitResult& HitResult)
 {
 	const auto* Camera = GetFollowCamera();
 	const FVector CameraForwardVector = Camera->GetForwardVector();
@@ -82,7 +82,7 @@ FVector ABasicCharacter::TraceLine(UWorld* const World, bool DrawTrace, FHitResu
 	FCollisionQueryParams CollisionQueryParams;
 	CollisionQueryParams.AddIgnoredActor(this);
 
-	UKismetSystemLibrary::LineTraceSingle(World
+	UKismetSystemLibrary::LineTraceSingle(GetWorld()
 		, TraceStartLocation, TraceEndLocation
 		, UEngineTypes::ConvertToTraceType(TRACE_CHARACTER)
 		, false

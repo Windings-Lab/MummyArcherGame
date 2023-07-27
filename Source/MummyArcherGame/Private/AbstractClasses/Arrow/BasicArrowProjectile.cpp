@@ -40,7 +40,7 @@ ABasicArrowProjectile::ABasicArrowProjectile()
 void ABasicArrowProjectile::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
-
+	
 	ProjectileMovement->ProjectileGravityScale = GravityScale;
 	ProjectileMovement->MaxSpeed = MaxSpeed;
 }
@@ -70,12 +70,12 @@ void ABasicArrowProjectile::PredictArrowPath(UWorld* const World
 {
 	if(GetGravityScale() == 0.f) return;
 	
-	FVector Velocity = ArrowParameters.ImpactPoint - ArrowParameters.SpawnLocation;
+	FVector Velocity = ArrowParameters.ImpactPoint - ArrowParameters.SpawnTransform.GetLocation();
 		
 	FCollisionResponseParams CollisionResponseParams;
 	CollisionResponseParams.CollisionResponse.SetResponse(TRACE_CHARACTER, ECR_Block);
 		
-	UGameplayStatics::SuggestProjectileVelocity(World, Velocity, ArrowParameters.SpawnLocation, ArrowParameters.ImpactPoint, GetMaxSpeed()
+	UGameplayStatics::SuggestProjectileVelocity(World, Velocity, ArrowParameters.SpawnTransform.GetLocation(), ArrowParameters.ImpactPoint, GetMaxSpeed()
 	                                            , false, 2
 	                                            , -980 * GetGravityScale()
 	                                            , ESuggestProjVelocityTraceOption::Type::DoNotTrace
@@ -85,7 +85,7 @@ void ABasicArrowProjectile::PredictArrowPath(UWorld* const World
 
 	FPredictProjectilePathParams ProjectilePathParams = FPredictProjectilePathParams(
 		2.f
-		, ArrowParameters.SpawnLocation
+		, ArrowParameters.SpawnTransform.GetLocation()
 		, Velocity.GetSafeNormal() * ArrowParameters.Speed,
 		10.f
 		, TRACE_CHARACTER, GetOwner());
@@ -105,34 +105,4 @@ float ABasicArrowProjectile::CalculateArrowSpeed(const float BowTensionTime, con
 	float Power = (PowerDifference * ClampedTime / BowMaxTensionTime) + GetMinSpeed();
 	
 	return Power;
-}
-
-void ABasicArrowProjectile::CreateArrow(UWorld* const World, FArrowParameters& ArrowParameters, const TSubclassOf<ABasicArrowProjectile>& ArrowProjectileClass) const
-{
-	FPredictProjectilePathResult ProjectilePathResult;
-	PredictArrowPath(World, ArrowParameters, false, ProjectilePathResult);
-
-	FVector InitialVelocityDirection = ArrowParameters.ImpactPoint - ArrowParameters.SpawnLocation;
-	if(GetGravityScale() != 0.f && !ProjectilePathResult.PathData.IsEmpty())
-	{
-		InitialVelocityDirection = ProjectilePathResult.PathData[0].Velocity;
-		ProjectileMovement->InitialSpeed = InitialVelocityDirection.Length();
-	}
-	else
-	{
-		InitialVelocityDirection = InitialVelocityDirection.GetSafeNormal();
-		ProjectileMovement->InitialSpeed = ArrowParameters.Speed;
-	}
-
-	FActorSpawnParameters ActorSpawnParameters;
-	ActorSpawnParameters.Owner = GetOwner();
-	ActorSpawnParameters.Instigator = GetInstigator();
-	ActorSpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
-	FTransform SpawnTransform;
-	SpawnTransform.SetLocation(ArrowParameters.SpawnLocation);
-	SpawnTransform.SetScale3D(FVector::One());
-	SpawnTransform.SetRotation(InitialVelocityDirection.ToOrientationQuat());
-	
-	World->SpawnActor<ABasicArrowProjectile>(ArrowProjectileClass, SpawnTransform, ActorSpawnParameters);
 }

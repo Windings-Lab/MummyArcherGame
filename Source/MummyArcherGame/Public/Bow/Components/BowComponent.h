@@ -61,8 +61,14 @@ private:
 		void FireButtonHolding(const struct FInputActionInstance& ActionInstance);
 	UFUNCTION()
 		void FireButtonPressed();
+	
 	UFUNCTION()
 		void Fire(const struct FInputActionInstance& ActionInstance);
+	UFUNCTION(Server, Reliable)
+		void Server_Fire(const FTransform& SpawnTransform, float InitialSpeed);
+	UFUNCTION(NetMulticast, Reliable)
+		void Multicast_Fire(const FTransform& SpawnTransform, float InitialSpeed);
+	
 	UFUNCTION()
 		void FireButtonReleased();
 };

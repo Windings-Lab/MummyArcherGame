@@ -17,7 +17,7 @@ public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
-	FVector TraceLine(UWorld* const World, bool DrawTrace, FHitResult& HitResult);
+	FVector TraceLine(bool DrawTrace, FHitResult& HitResult);
 
 protected:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;

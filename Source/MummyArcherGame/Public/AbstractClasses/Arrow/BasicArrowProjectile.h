@@ -11,7 +11,19 @@ struct FArrowParameters
 {
 	GENERATED_BODY()
 
-	FVector SpawnLocation;
+	FArrowParameters() : Class(nullptr), Speed(0.f) {}
+	FArrowParameters(UClass* const InClass, const FTransform& InSpawnTransform, const FVector& InImpactPoint, float InSpeed)
+		: Class(InClass), SpawnTransform(InSpawnTransform.GetRotation(), InSpawnTransform.GetLocation(), FVector::One())
+			, ImpactPoint(InImpactPoint) , Speed(InSpeed)
+	{}
+
+	FArrowParameters(UClass* const InClass, const FVector& InLocation, const FVector& InImpactPoint, float InSpeed)
+	: Class(InClass), SpawnTransform(FQuat(), InLocation, FVector::One())
+		, ImpactPoint(InImpactPoint) , Speed(InSpeed)
+	{}
+	
+	UClass* Class;
+	FTransform SpawnTransform;
 	FVector ImpactPoint;
 	float   Speed;
 };
@@ -31,7 +43,6 @@ public:
 	
 	void PredictArrowPath(UWorld* const World, FArrowParameters& ArrowParameters, bool DrawArc, struct FPredictProjectilePathResult& ProjectilePathResult) const;
 	float CalculateArrowSpeed(float BowTensionTime, float BowMaxTensionTime) const;
-	virtual void CreateArrow(UWorld* const World, FArrowParameters& ArrowParameters, const TSubclassOf<ABasicArrowProjectile>& ArrowProjectileClass) const;
 
 protected:
 	virtual void OnConstruction(const FTransform& Transform) override;
