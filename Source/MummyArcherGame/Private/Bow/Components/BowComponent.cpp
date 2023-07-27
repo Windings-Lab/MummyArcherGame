@@ -131,32 +131,36 @@ void UBowComponent::Fire(const FInputActionInstance& ActionInstance)
 	}
 	
 	ArrowParameters.SpawnTransform.SetRotation(InitialVelocityDirection.ToOrientationQuat());
-	
+	ArrowCDO->GetProjectileMovement()->InitialSpeed = InitialSpeed;
+
+	Fire(ArrowParameters.SpawnTransform);
+}
+
+void UBowComponent::Fire(const FTransform& SpawnTransform)
+{
 	if(Pawn->HasAuthority())
 	{
-		Multicast_Fire(ArrowParameters.SpawnTransform, InitialSpeed);
+		FActorSpawnParameters ActorSpawnParameters;
+		ActorSpawnParameters.Owner = Pawn;
+		ActorSpawnParameters.Instigator = Pawn;
+		ActorSpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+		
+		GetWorld()->SpawnActor(ArrowProjectileClass, &SpawnTransform, ActorSpawnParameters);
 	}
 	else
 	{
-		Server_Fire(ArrowParameters.SpawnTransform, InitialSpeed);
+		Server_Fire(SpawnTransform);
 	}
 }
 
-void UBowComponent::Server_Fire_Implementation(const FTransform& SpawnTransform, float InitialSpeed)
+void UBowComponent::Server_Fire_Implementation(const FTransform& SpawnTransform)
 {
-	Multicast_Fire(SpawnTransform, InitialSpeed);
-}
-
-void UBowComponent::Multicast_Fire_Implementation(const FTransform& SpawnTransform, float InitialSpeed)
-{
-	auto* Arrow = GetWorld()->SpawnActorDeferred<ABasicArrowProjectile>(ArrowProjectileClass
-		, SpawnTransform
-		, Pawn
-		, Pawn
-		, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
-
-	Arrow->GetProjectileMovement()->InitialSpeed = InitialSpeed;
-	UGameplayStatics::FinishSpawningActor(Arrow, SpawnTransform);
+	FActorSpawnParameters ActorSpawnParameters;
+	ActorSpawnParameters.Owner = Pawn;
+	ActorSpawnParameters.Instigator = Pawn;
+	ActorSpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+	
+	GetWorld()->SpawnActor(ArrowProjectileClass, &SpawnTransform, ActorSpawnParameters);
 }
 
 void UBowComponent::FireButtonReleased()

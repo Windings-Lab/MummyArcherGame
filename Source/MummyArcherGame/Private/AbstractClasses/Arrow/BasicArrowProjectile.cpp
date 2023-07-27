@@ -5,6 +5,7 @@
 #include "Components/BoxComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 
 #define TRACE_CHARACTER ECC_GameTraceChannel2
 
@@ -45,6 +46,11 @@ void ABasicArrowProjectile::OnConstruction(const FTransform& Transform)
 	ProjectileMovement->MaxSpeed = MaxSpeed;
 }
 
+void ABasicArrowProjectile::BeginPlay()
+{
+	Super::BeginPlay();
+}
+
 void ABasicArrowProjectile::OnArrowBeginOverlap(UPrimitiveComponent* OverlappedComponent
                                                 , AActor* OtherActor
                                                 , UPrimitiveComponent* OtherComp
@@ -52,21 +58,38 @@ void ABasicArrowProjectile::OnArrowBeginOverlap(UPrimitiveComponent* OverlappedC
                                                 , bool bFromSweep
                                                 , const FHitResult & SweepResult)
 {
-	if ((OtherActor != nullptr) && (OtherActor != this) && (OtherComp != nullptr))
-	{
-		ProjectileMovement->StopMovementImmediately();
-		ProjectileMovement->ProjectileGravityScale = 0.f;
+	if (OtherActor == nullptr || OtherActor == this) return;
+	
+	ProjectileMovement->StopMovementImmediately();
+	ProjectileMovement->ProjectileGravityScale = 0.f;
+
+	BoxCollider->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 		
-		const FAttachmentTransformRules AttachmentTransformRules = FAttachmentTransformRules(EAttachmentRule::KeepWorld, true);
-		AttachToActor(OtherActor, AttachmentTransformRules);
-		BoxCollider->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+	AttachToActor(OtherActor, FAttachmentTransformRules::KeepWorldTransform);
+
+	if(GetOwner()->HasAuthority())
+	{
+		Server_ArrowRelativeTransform = Arrow->GetRelativeTransform();
+		Server_RootRelativeTransform = RootComponent->GetRelativeTransform();
 	}
 }
 
+void ABasicArrowProjectile::OnRep_AttachmentReplication()
+{
+	Super::OnRep_AttachmentReplication();
+
+	ProjectileMovement->StopMovementImmediately();
+	ProjectileMovement->ProjectileGravityScale = 0.f;
+	BoxCollider->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+
+	RootComponent->SetRelativeTransform(Server_RootRelativeTransform);
+	Arrow->SetRelativeTransform(Server_ArrowRelativeTransform);
+}
+
 void ABasicArrowProjectile::PredictArrowPath(UWorld* const World
-											, FArrowParameters& ArrowParameters
-											, bool DrawArc
-											, FPredictProjectilePathResult& ProjectilePathResult) const
+                                             , FArrowParameters& ArrowParameters
+                                             , bool DrawArc
+                                             , FPredictProjectilePathResult& ProjectilePathResult) const
 {
 	if(GetGravityScale() == 0.f) return;
 	
@@ -105,4 +128,12 @@ float ABasicArrowProjectile::CalculateArrowSpeed(const float BowTensionTime, con
 	float Power = (PowerDifference * ClampedTime / BowMaxTensionTime) + GetMinSpeed();
 	
 	return Power;
+}
+
+void ABasicArrowProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
+	DOREPLIFETIME(ABasicArrowProjectile, Server_ArrowRelativeTransform)
+	DOREPLIFETIME(ABasicArrowProjectile, Server_RootRelativeTransform)
 }

@@ -33,6 +33,18 @@ class ABasicArrowProjectile : public AActor
 {
 	GENERATED_BODY()
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category=Components, meta = (AllowPrivateAccess = "true"))
+	USceneComponent* RootSceneComponent;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category=Components, meta = (AllowPrivateAccess = "true"))
+	UStaticMeshComponent* Arrow;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category=Components, meta = (AllowPrivateAccess = "true"))
+	class UBoxComponent* BoxCollider;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	class UProjectileMovementComponent* ProjectileMovement;
+
 public:
 	ABasicArrowProjectile();
 
@@ -45,7 +57,12 @@ public:
 	float CalculateArrowSpeed(float BowTensionTime, float BowMaxTensionTime) const;
 
 protected:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	// Called when client arrow still not collided with something, when server arrow is collided
+	virtual void OnRep_AttachmentReplication() override;
+	
 	virtual void OnConstruction(const FTransform& Transform) override;
+	virtual void BeginPlay() override;
 
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=ArrowSettings, meta = (AllowPrivateAccess = "true"))
@@ -57,18 +74,14 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=ArrowSettings, meta = (AllowPrivateAccess = "true"))
 	float GravityScale;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category=Components, meta = (AllowPrivateAccess = "true"))
-	USceneComponent* RootSceneComponent;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category=Components, meta = (AllowPrivateAccess = "true"))
-	UStaticMeshComponent* Arrow;
+private:
+	UPROPERTY(Replicated)
+	FTransform Server_RootRelativeTransform;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category=Components, meta = (AllowPrivateAccess = "true"))
-	class UBoxComponent* BoxCollider;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	UProjectileMovementComponent* ProjectileMovement;
+	UPROPERTY(Replicated)
+	FTransform Server_ArrowRelativeTransform;
 
+private:
 	UFUNCTION()
 		void OnArrowBeginOverlap(UPrimitiveComponent* OverlappedComponent
 			, AActor* OtherActor

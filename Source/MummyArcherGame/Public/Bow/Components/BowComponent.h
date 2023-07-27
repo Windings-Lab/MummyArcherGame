@@ -64,10 +64,9 @@ private:
 	
 	UFUNCTION()
 		void Fire(const struct FInputActionInstance& ActionInstance);
+		void Fire(const FTransform& SpawnTransform);
 	UFUNCTION(Server, Reliable)
-		void Server_Fire(const FTransform& SpawnTransform, float InitialSpeed);
-	UFUNCTION(NetMulticast, Reliable)
-		void Multicast_Fire(const FTransform& SpawnTransform, float InitialSpeed);
+		void Server_Fire(const FTransform& SpawnTransform);
 	
 	UFUNCTION()
 		void FireButtonReleased();
