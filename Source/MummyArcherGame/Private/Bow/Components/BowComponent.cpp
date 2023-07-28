@@ -83,7 +83,7 @@ void UBowComponent::Focus(const FInputActionValue& Value)
 	{
 		Camera->SetFieldOfView(90.f);
 		if(!SightWidget) return;
-		SightWidget->AddToViewport();
+		SightWidget->RemoveFromParent();
 	}
 }
 
