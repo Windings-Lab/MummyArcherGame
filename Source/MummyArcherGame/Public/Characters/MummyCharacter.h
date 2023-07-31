@@ -18,7 +18,6 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		void Hit(int Damage);
-	void UpdateHealthWidget();
 
 	UFUNCTION(BlueprintCallable)
 		void Heal(int Recovery);

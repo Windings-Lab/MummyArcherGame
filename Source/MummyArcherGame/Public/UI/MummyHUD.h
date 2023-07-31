@@ -17,11 +17,6 @@ class MUMMYARCHERGAME_API AMummyHUD : public AHUD
 public:
 	virtual void BeginPlay() override;
 
-	void UpdateHealth(float Parameter)
-	{
-		GameHUDWidget->GetHealthWidget()->UpdateHealth(Parameter);
-	}
-
 	UFUNCTION(BlueprintCallable, Category = Widgets)
 		FORCEINLINE	UGameHUDWidget* GetMainWidget() const { return GameHUDWidget; };
 

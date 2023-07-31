@@ -50,5 +50,12 @@ void UHealthComponent::InitializeComponent()
 void UHealthComponent::ChangeHealth(int32 Parameter)
 {
 	Health += Parameter;
-	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Health: %d"), Health));
+	if (GetWorld()->GetFirstPlayerController() && !GetWorld()->GetFirstPlayerController()->HasAuthority())
+	{
+		if (!GameHUDWidget)
+		{
+			GameHUDWidget = Cast<UGameHUDWidget>(Cast<AMummyHUD>(GetWorld()->GetFirstPlayerController()->GetHUD())->GetMainWidget());
+		}
+		GameHUDWidget->GetHealthWidget()->UpdateHealth(static_cast<float>(Health) / static_cast<float>(DefaultHealth));
+	}	
 }

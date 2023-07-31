@@ -18,41 +18,16 @@ AMummyCharacter::AMummyCharacter()
 	Bow->SetupAttachment(GetFollowCamera());
 
 	Health = CreateDefaultSubobject<UHealthComponent>(TEXT("Health"));
-
 }
 
 void AMummyCharacter::Hit(int Damage)
 {
 	Health->Hit(Damage);
-	UpdateHealthWidget();
 }
 
 void AMummyCharacter::Heal(int Recovery)
 {
 	Health->Heal(Recovery);
-	UpdateHealthWidget();
-}
-
-//TODO: REFACTOR THIS IN GOOD WAY!
-void AMummyCharacter::UpdateHealthWidget()
-{
-	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("UpdateHealthWidget")));
-	if (GetController() && !GetController()->HasAuthority())
-	{
-		Cast<AMummyHUD>(GetWorld()->GetFirstPlayerController()->GetHUD())->UpdateHealth(static_cast<float>(Health->GetHealth())/ static_cast<float>(Health->DefaultHealth));
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Blue, FString::Printf(TEXT("UpdateHealthWidget")));
-		//AMummyPlayerController* PC = Cast<AMummyPlayerController>(GetController());
-		//if (PC)
-		//{
-		//	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Blue, FString::Printf(TEXT("UpdateHealthWidget")));
-		//	AMummyHUD* HUD = Cast<AMummyHUD>(PC->GetHUD());
-		//	if (HUD)
-		//	{
-		//		// Call a function on the HUD widget to update the health display
-		//		HUD->UpdateHealth(Health->GetHealth());
-		//	}
-		//}
-	}
 }
 
 void AMummyCharacter::BeginPlay()
@@ -66,7 +41,7 @@ void AMummyCharacter::BeginPlay()
 	if(!Subsystem) return;
 	
 	Bow->AddBowMappingContext(Subsystem, 1);
-	UpdateHealthWidget();
+	Hit(0);
 		
 }
 
