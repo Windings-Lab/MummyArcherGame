@@ -50,11 +50,12 @@ void UHealthComponent::InitializeComponent()
 void UHealthComponent::ChangeHealth(int32 Parameter)
 {
 	Health += Parameter;
-	if (GetWorld()->GetFirstPlayerController() && !GetWorld()->GetFirstPlayerController()->HasAuthority())
+	
+	if (Cast<ABasicCharacter>(GetOwner())->GetController() && !Cast<ABasicCharacter>(GetOwner())->GetController()->HasAuthority())
 	{
 		if (!GameHUDWidget)
 		{
-			GameHUDWidget = Cast<UGameHUDWidget>(Cast<AMummyHUD>(GetWorld()->GetFirstPlayerController()->GetHUD())->GetMainWidget());
+			GameHUDWidget = Cast<UGameHUDWidget>(Cast<AMummyHUD>(Cast<APlayerController>(Cast<ABasicCharacter>(GetOwner())->GetController())->GetHUD())->GetMainWidget());
 		}
 		GameHUDWidget->GetHealthWidget()->UpdateHealth(static_cast<float>(Health) / static_cast<float>(DefaultHealth));
 	}	
