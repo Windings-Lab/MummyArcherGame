@@ -2,6 +2,7 @@
 
 #include "AbstractClasses/Arrow/BasicArrowProjectile.h"
 
+#include "Characters/MummyCharacter.h"
 #include "Components/BoxComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -56,6 +57,12 @@ void ABasicArrowProjectile::OnArrowBeginOverlap(UPrimitiveComponent* OverlappedC
 	{
 		ProjectileMovement->StopMovementImmediately();
 		ProjectileMovement->ProjectileGravityScale = 0.f;
+
+		AMummyCharacter* MummyCharacter = Cast<AMummyCharacter>(OtherActor);
+		if (IsValid(MummyCharacter))
+		{
+			MummyCharacter->Hit(10);
+		}
 		
 		const FAttachmentTransformRules AttachmentTransformRules = FAttachmentTransformRules(EAttachmentRule::KeepWorld, true);
 		AttachToActor(OtherActor, AttachmentTransformRules);

@@ -3,16 +3,56 @@
 #include "Characters/MummyCharacter.h"
 
 #include "EnhancedInputComponent.h"
-#include "Bow/Components/BowComponent.h"
+#include "Characters/Components/BowComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Camera/CameraComponent.h"
+#include "Characters/Components/HealthComponent.h"
+#include "Characters/Controllers/MummyPlayerController.h"
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/PlayerController.h"
+#include "UI/MummyHUD.h"
 
 AMummyCharacter::AMummyCharacter()
 {
 	Bow = CreateDefaultSubobject<UBowComponent>(TEXT("Bow"));
 	Bow->SetupAttachment(GetFollowCamera());
+
+	Health = CreateDefaultSubobject<UHealthComponent>(TEXT("Health"));
+
+}
+
+void AMummyCharacter::Hit(int Damage)
+{
+	Health->Hit(Damage);
+	UpdateHealthWidget();
+}
+
+void AMummyCharacter::Heal(int Recovery)
+{
+	Health->Heal(Recovery);
+	UpdateHealthWidget();
+}
+
+//TODO: REFACTOR THIS IN GOOD WAY!
+void AMummyCharacter::UpdateHealthWidget()
+{
+	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("UpdateHealthWidget")));
+	if (GetController() && !GetController()->HasAuthority())
+	{
+		Cast<AMummyHUD>(GetWorld()->GetFirstPlayerController()->GetHUD())->UpdateHealth(static_cast<float>(Health->GetHealth())/ static_cast<float>(Health->DefaultHealth));
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Blue, FString::Printf(TEXT("UpdateHealthWidget")));
+		//AMummyPlayerController* PC = Cast<AMummyPlayerController>(GetController());
+		//if (PC)
+		//{
+		//	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Blue, FString::Printf(TEXT("UpdateHealthWidget")));
+		//	AMummyHUD* HUD = Cast<AMummyHUD>(PC->GetHUD());
+		//	if (HUD)
+		//	{
+		//		// Call a function on the HUD widget to update the health display
+		//		HUD->UpdateHealth(Health->GetHealth());
+		//	}
+		//}
+	}
 }
 
 void AMummyCharacter::BeginPlay()
@@ -26,6 +66,8 @@ void AMummyCharacter::BeginPlay()
 	if(!Subsystem) return;
 	
 	Bow->AddBowMappingContext(Subsystem, 1);
+	UpdateHealthWidget();
+		
 }
 
 void AMummyCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)

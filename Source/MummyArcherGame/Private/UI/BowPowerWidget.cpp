@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Bow/Widgets/BowPowerWidget.h"
+#include "UI/BowPowerWidget.h"
 
 #include "Components/ProgressBar.h"
 

@@ -16,6 +16,13 @@ class MUMMYARCHERGAME_API AMummyCharacter : public ABasicCharacter, public ICanM
 public:
 	AMummyCharacter();
 
+	UFUNCTION(BlueprintCallable)
+		void Hit(int Damage);
+	void UpdateHealthWidget();
+
+	UFUNCTION(BlueprintCallable)
+		void Heal(int Recovery);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -25,11 +32,15 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
 		class UBowComponent* Bow;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
+		class UHealthComponent* Health;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Movement", meta = (AllowPrivateAccess = "true"))
 		UInputAction* MoveAction;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Movement", meta = (AllowPrivateAccess = "true"))
 		class UInputAction* JumpAction;
+
 
 	UFUNCTION()
 		virtual void Move(const FInputActionValue& Value) override;
@@ -37,4 +48,5 @@ private:
 		virtual UInputAction* GetMoveAction() override;
 	UFUNCTION()
 		virtual UInputAction* GetJumpAction() override;
+
 };
