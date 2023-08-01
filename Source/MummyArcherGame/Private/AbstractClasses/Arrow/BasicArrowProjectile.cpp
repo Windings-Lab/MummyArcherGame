@@ -64,12 +64,6 @@ void ABasicArrowProjectile::OnArrowBeginOverlap(UPrimitiveComponent* OverlappedC
 	ProjectileMovement->StopMovementImmediately();
 	ProjectileMovement->ProjectileGravityScale = 0.f;
 
-	AMummyCharacter* MummyCharacter = Cast<AMummyCharacter>(OtherActor);
-	if (IsValid(MummyCharacter))
-	{
-		MummyCharacter->Hit(10);
-	}
-
 	BoxCollider->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 		
 	AttachToActor(OtherActor, FAttachmentTransformRules::KeepWorldTransform);

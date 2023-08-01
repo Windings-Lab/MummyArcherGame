@@ -4,6 +4,7 @@
 #include "Characters/Components/HealthComponent.h"
 
 #include "Characters/MummyCharacter.h"
+#include "Components/WidgetComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/GameHUDWidget.h"
 #include "UI/HealthWidget.h"
@@ -56,7 +57,8 @@ void UHealthComponent::ChangeHealth(int32 Parameter)
 		if (!GameHUDWidget)
 		{
 			GameHUDWidget = Cast<UGameHUDWidget>(Cast<AMummyHUD>(Cast<APlayerController>(Cast<ABasicCharacter>(GetOwner())->GetController())->GetHUD())->GetMainWidget());
-		}
-		GameHUDWidget->GetHealthWidget()->UpdateHealth(static_cast<float>(Health) / static_cast<float>(DefaultHealth));
+		}	
+		
+		GameHUDWidget->GetHealthWidget()->UpdateHealth(GetPercent(), Health);
 	}	
 }

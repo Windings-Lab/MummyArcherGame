@@ -4,8 +4,19 @@
 #include "UI/HealthWidget.h"
 
 #include "Components/ProgressBar.h"
+#include "Components/TextBlock.h"
 
-void UHealthWidget::UpdateHealth(float Percent)
+void UHealthWidget::UpdateHealth(float Percent, int32 Points)
 {
-	HealthBar->SetPercent(Percent);
+	if (HealthBar && HealthPoints)
+	{
+		HealthBar->SetPercent(Percent);
+
+		HealthPoints->SetText( FText::FromString(FString::FromInt(Points)) );
+	}
+}
+
+void UHealthWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
 }

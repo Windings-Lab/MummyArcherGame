@@ -25,7 +25,21 @@ public:
 		void Heal(int32 Parameter);
 
 	UFUNCTION(BlueprintCallable)
-		int32 GetHealth() { return Health; }
+	FORCEINLINE	int32 GetHealth() const { return Health; }
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE	float GetPercent() const
+	{ return static_cast<float>(Health) / static_cast<float>(DefaultHealth); }
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE	bool IsDead() const
+	{	return bIsDead;	}
+
+	UFUNCTION(BlueprintCallable)
+		void Kill()
+	{
+		bIsDead = true;
+	}
 
 protected:
 	virtual void InitializeComponent() override;
@@ -41,5 +55,10 @@ private:
 
 	UPROPERTY()
 		TObjectPtr<UGameHUDWidget> GameHUDWidget;
+
+	UPROPERTY()
+		TObjectPtr<UHealthWidget> HealthWidget;
+
+	bool bIsDead = false;
 		
 };

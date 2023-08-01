@@ -6,7 +6,10 @@
 #include "AbstractClasses/Characters/BasicCharacter.h"
 #include "AbstractClasses/Characters/Interfaces/CanJump.h"
 #include "AbstractClasses/Characters/Interfaces/CanMove.h"
+#include "UI/HealthWidget.h"
 #include "MummyCharacter.generated.h"
+
+class UWidgetComponent;
 
 UCLASS()
 class MUMMYARCHERGAME_API AMummyCharacter : public ABasicCharacter, public ICanMove, public ICanJump
@@ -22,10 +25,14 @@ public:
 	UFUNCTION(BlueprintCallable)
 		void Heal(int Recovery);
 
+	UFUNCTION(BlueprintCallable)
+		FORCEINLINE	UWidgetComponent* GetHealthBarWidget() const { return HealthBarWidget; };
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+
 
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
@@ -39,6 +46,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Movement", meta = (AllowPrivateAccess = "true"))
 		class UInputAction* JumpAction;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
+		UWidgetComponent* HealthBarWidget;
 
 
 	UFUNCTION()

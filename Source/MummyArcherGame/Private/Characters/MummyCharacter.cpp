@@ -8,6 +8,7 @@
 #include "Camera/CameraComponent.h"
 #include "Characters/Components/HealthComponent.h"
 #include "Characters/Controllers/MummyPlayerController.h"
+#include "Components/WidgetComponent.h"
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/PlayerController.h"
 #include "UI/MummyHUD.h"
@@ -18,6 +19,9 @@ AMummyCharacter::AMummyCharacter()
 	Bow->SetupAttachment(GetFollowCamera());
 
 	Health = CreateDefaultSubobject<UHealthComponent>(TEXT("Health"));
+
+	HealthBarWidget = CreateDefaultSubobject<UWidgetComponent>((TEXT("Widget")));
+	HealthBarWidget->SetupAttachment(RootComponent);
 }
 
 void AMummyCharacter::Hit(int Damage)
@@ -41,6 +45,7 @@ void AMummyCharacter::BeginPlay()
 	if(!Subsystem) return;
 	
 	Bow->AddBowMappingContext(Subsystem, 1);
+
 	Hit(0);
 		
 }
