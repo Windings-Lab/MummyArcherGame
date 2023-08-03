@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "UI/GameHUDWidget.h"
 #include "BowComponent.generated.h"
 
 UCLASS(Blueprintable, BlueprintType, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -36,25 +37,18 @@ private:
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=BowSettings, meta = (AllowPrivateAccess = "true"))
 		float MaxBowTensionTime;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="BowSettings|Widgets", meta = (AllowPrivateAccess = "true"))
-		TSubclassOf<UUserWidget> BowPowerWidgetClass;
+
 	UPROPERTY()
-		class UBowPowerWidget* BowPowerWidget;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="BowSettings|Widgets", meta = (AllowPrivateAccess = "true"))
-		TSubclassOf<UUserWidget> SightWidgetClass;
-	UPROPERTY()
-		UUserWidget* SightWidget;
+		TObjectPtr<UGameHUDWidget> GameHUDWidget;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Input|Bow", meta = (AllowPrivateAccess = "true"))
-	class UInputMappingContext* BowMappingContext;
+		class UInputMappingContext* BowMappingContext;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input|Bow", meta = (AllowPrivateAccess = "true"))
-	class UInputAction* BowFireAction;
+		class UInputAction* BowFireAction;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input|Bow", meta = (AllowPrivateAccess = "true"))
-	UInputAction* BowFocusAction;
+		UInputAction* BowFocusAction;
 	
 private:
 	// Action functions

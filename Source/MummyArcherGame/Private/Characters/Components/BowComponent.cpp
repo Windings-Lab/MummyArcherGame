@@ -1,11 +1,11 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 
-#include "Bow/Components/BowComponent.h"
+#include "Characters/Components/BowComponent.h"
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "Bow/Widgets/BowPowerWidget.h"
+#include "UI/BowPowerWidget.h"
 #include "AbstractClasses/Arrow/BasicArrowProjectile.h"
 #include "AbstractClasses/Characters/BasicCharacter.h"
 #include "Blueprint/UserWidget.h"
@@ -14,6 +14,8 @@
 #include "Engine/Components/BasicProjectileMovementComponent.h"
 #include "GameRules/MummyGameState.h"
 #include "Kismet/GameplayStatics.h"
+#include "UI/GameHUDWidget.h"
+#include "UI/MummyHUD.h"
 
 UBowComponent::UBowComponent()
 {
@@ -51,15 +53,7 @@ void UBowComponent::SetupPlayerInput(UInputComponent* PlayerInputComponent)
 		EnhancedInputComponent->BindAction(BowFocusAction, ETriggerEvent::Triggered, this, &UBowComponent::Focus);
 	}
 
-	if(SightWidgetClass)
-	{
-		SightWidget = CreateWidget<UUserWidget>(GetWorld(), SightWidgetClass);
-	}
-
-	if(BowPowerWidgetClass)
-	{
-		BowPowerWidget = Cast<UBowPowerWidget>(CreateWidget<UUserWidget>(GetWorld(), BowPowerWidgetClass));
-	}
+	GameHUDWidget = Cast<AMummyHUD>(GetWorld()->GetFirstPlayerController()->GetHUD())->GetMainWidget();
 }
 
 void UBowComponent::AddBowMappingContext(UEnhancedInputLocalPlayerSubsystem* Subsystem, int Priority)
@@ -80,20 +74,20 @@ void UBowComponent::Focus(const FInputActionValue& Value)
 	{
 
 		Camera->SetFieldOfView(30.f);
-		if(!SightWidget) return;
-		SightWidget->AddToViewport();
+		//if(!SightWidget) return;
+		//SightWidget->AddToViewport();
 	}
 	else
 	{
 		Camera->SetFieldOfView(90.f);
-		if(!SightWidget) return;
-		SightWidget->RemoveFromParent();
+		//if(!SightWidget) return;
+		//SightWidget->AddToViewport();
 	}
 }
 
 void UBowComponent::FireButtonPressed()
 {
-	if(BowPowerWidget) BowPowerWidget->AddToViewport();
+	if(GameHUDWidget) GameHUDWidget->ShowBowPower();
 }
 
 FProjectileParams UBowComponent::CreateArrowParams(float BowTensionTime)
@@ -129,7 +123,7 @@ void UBowComponent::FireButtonHolding(const FInputActionInstance& ActionInstance
 	FPredictProjectilePathResult ProjectilePathResult;
 	ArrowPathPredictor->PredictProjectilePathWithWind(*GetWorld(), ArrowParams, {GetOwner()}, ProjectilePathResult);
 	
-	if(BowPowerWidget) BowPowerWidget->SetPower(ArrowParams.Speed, ArrowCDO->GetMinSpeed(), ArrowCDO->GetMaxSpeed());
+	if(GameHUDWidget) GameHUDWidget->GetBowPowerWidget()->SetPower(ArrowParams.Speed, ArrowCDO->GetMinSpeed(), ArrowCDO->GetMaxSpeed());
 }
 
 void UBowComponent::Fire(const FInputActionInstance& ActionInstance)
@@ -172,5 +166,5 @@ void UBowComponent::Server_Fire_Implementation(const FTransform& SpawnTransform)
 
 void UBowComponent::FireButtonReleased()
 {
-	if(BowPowerWidget) BowPowerWidget->RemoveFromParent();
+	if(GameHUDWidget) GameHUDWidget->HideBowPower();
 }

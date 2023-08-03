@@ -3,16 +3,35 @@
 #include "Characters/MummyCharacter.h"
 
 #include "EnhancedInputComponent.h"
-#include "Bow/Components/BowComponent.h"
+#include "Characters/Components/BowComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Camera/CameraComponent.h"
+#include "Characters/Components/HealthComponent.h"
+#include "Characters/Controllers/MummyPlayerController.h"
+#include "Components/WidgetComponent.h"
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/PlayerController.h"
+#include "UI/MummyHUD.h"
 
 AMummyCharacter::AMummyCharacter()
 {
 	Bow = CreateDefaultSubobject<UBowComponent>(TEXT("Bow"));
 	Bow->SetupAttachment(GetFollowCamera());
+
+	Health = CreateDefaultSubobject<UHealthComponent>(TEXT("Health"));
+
+	HealthBarWidget = CreateDefaultSubobject<UWidgetComponent>((TEXT("Widget")));
+	HealthBarWidget->SetupAttachment(RootComponent);
+}
+
+void AMummyCharacter::Hit(int Damage)
+{
+	Health->Hit(Damage);
+}
+
+void AMummyCharacter::Heal(int Recovery)
+{
+	Health->Heal(Recovery);
 }
 
 void AMummyCharacter::BeginPlay()
@@ -26,6 +45,9 @@ void AMummyCharacter::BeginPlay()
 	if(!Subsystem) return;
 	
 	Bow->AddBowMappingContext(Subsystem, 1);
+
+	Hit(0);
+		
 }
 
 void AMummyCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)

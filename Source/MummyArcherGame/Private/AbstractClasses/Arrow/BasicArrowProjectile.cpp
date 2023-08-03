@@ -3,6 +3,7 @@
 #include "AbstractClasses/Arrow/BasicArrowProjectile.h"
 
 #include "MummyArcherGame/Public/Engine/Components/BasicProjectileMovementComponent.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 #include "Net/UnrealNetwork.h"
 
 ABasicArrowProjectile::ABasicArrowProjectile() 
