@@ -6,6 +6,8 @@
 #include "GameFramework/GameModeBase.h"
 #include "BasicGameMode.generated.h"
 
+class AMummyPlayerStart;
+
 UCLASS(minimalapi)
 class ABasicGameMode : public AGameModeBase
 {
@@ -13,6 +15,19 @@ class ABasicGameMode : public AGameModeBase
 
 public:
 	ABasicGameMode();
+
+	virtual void PostLogin(APlayerController* NewPlayer) override;
+
+	virtual AActor* ChoosePlayerStart_Implementation(AController* Player) override;
+
+	virtual bool ShouldSpawnAtStartSpot(AController* Player) override { return false; }
+
+	UPROPERTY(EditAnywhere, Category = "Defaults")
+	int32 TeamCount = 2;
+
+private:
+	UPROPERTY()
+	TArray<AMummyPlayerStart*> Starts;
 };
 
 

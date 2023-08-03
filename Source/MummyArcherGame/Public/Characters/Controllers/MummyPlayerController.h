@@ -13,5 +13,16 @@ UCLASS()
 class MUMMYARCHERGAME_API AMummyPlayerController : public APlayerController
 {
 	GENERATED_BODY()
+
+public:
+	UFUNCTION(BlueprintCallable)
+	void OnKilled();
+
+	void Respawn();
+
+protected:
 	
+	FTimerHandle TimerHandleRespawn;
+
+	float InRate = 5.0f;
 };
