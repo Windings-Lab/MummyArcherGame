@@ -12,8 +12,6 @@ AWindArea::AWindArea()
 	SetRootComponent(ArrowComponent);
 	
 	BoxArea = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxArea"));
-	BoxArea->OnComponentBeginOverlap.AddDynamic(this, &AWindArea::OnBeginOverlap);
-	BoxArea->OnComponentEndOverlap.AddDynamic(this,	&AWindArea::OnEndOverlap);
 	BoxArea->SetupAttachment(RootComponent);
 }
 
@@ -33,12 +31,20 @@ void AWindArea::BeginPlay()
 
 	if(bGlobal)
 	{
+		BoxArea->OnComponentBeginOverlap.RemoveAll(this);
+		BoxArea->OnComponentEndOverlap.RemoveAll(this);
+		
 		AMummyGameState* GameState = GetWorld()->GetGameState<AMummyGameState>();
 		if(GameState)
 		{
 			GameState->SetWindDirection(GetDirection());
 			GameState->SetWindSpeed(WindSpeed);
 		}
+	}
+	if(!bGlobal)
+	{
+		BoxArea->OnComponentBeginOverlap.AddUniqueDynamic(this, &AWindArea::OnBeginOverlap);
+		BoxArea->OnComponentEndOverlap.AddUniqueDynamic(this, &AWindArea::OnEndOverlap);
 	}
 }
 
@@ -48,12 +54,20 @@ void AWindArea::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEve
 
 	if(bGlobal)
 	{
+		BoxArea->OnComponentBeginOverlap.RemoveAll(this);
+		BoxArea->OnComponentEndOverlap.RemoveAll(this);
+		
 		AMummyGameState* GameState = GetWorld()->GetGameState<AMummyGameState>();
 		if(GameState)
 		{
 			GameState->SetWindDirection(GetDirection());
 			GameState->SetWindSpeed(WindSpeed);
 		}
+	}
+	if(!bGlobal)
+	{
+		BoxArea->OnComponentBeginOverlap.AddUniqueDynamic(this, &AWindArea::OnBeginOverlap);
+		BoxArea->OnComponentEndOverlap.AddUniqueDynamic(this, &AWindArea::OnEndOverlap);
 	}
 }
 
@@ -63,12 +77,20 @@ void AWindArea::PostEditMove(bool bFinished)
 
 	if(bGlobal)
 	{
+		BoxArea->OnComponentBeginOverlap.RemoveAll(this);
+		BoxArea->OnComponentEndOverlap.RemoveAll(this);
+		
 		AMummyGameState* GameState = GetWorld()->GetGameState<AMummyGameState>();
 		if(GameState)
 		{
 			GameState->SetWindDirection(GetDirection());
 			GameState->SetWindSpeed(WindSpeed);
 		}
+	}
+	if(!bGlobal)
+	{
+		BoxArea->OnComponentBeginOverlap.AddUniqueDynamic(this, &AWindArea::OnBeginOverlap);
+		BoxArea->OnComponentEndOverlap.AddUniqueDynamic(this, &AWindArea::OnEndOverlap);
 	}
 }
 
@@ -79,7 +101,7 @@ void AWindArea::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor*
 	
 	if(IAffectedByWind* AffectedByWind = Cast<IAffectedByWind>(OtherActor))
 	{
-		AffectedByWind->SetWindModificator(GetVelocity());
+		AffectedByWind->SetWindModificator(GetAcceleration());
 	}
 }
 
@@ -90,7 +112,7 @@ void AWindArea::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* O
 	
 	if(IAffectedByWind* AffectedByWind = Cast<IAffectedByWind>(OtherActor))
 	{
-		AffectedByWind->SetWindModificator(-GetVelocity());
+		AffectedByWind->SetWindModificator(-GetAcceleration());
 	}
 }
 
