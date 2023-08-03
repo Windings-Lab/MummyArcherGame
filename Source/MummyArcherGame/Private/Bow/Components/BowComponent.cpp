@@ -10,13 +10,17 @@
 #include "AbstractClasses/Characters/BasicCharacter.h"
 #include "Blueprint/UserWidget.h"
 #include "Camera/CameraComponent.h"
-#include "GameFramework/ProjectileMovementComponent.h"
+#include "Engine/ProjectilePathPredictor.h"
+#include "Engine/Components/BasicProjectileMovementComponent.h"
+#include "GameRules/MummyGameState.h"
 #include "Kismet/GameplayStatics.h"
 
 UBowComponent::UBowComponent()
 {
 	bWantsInitializeComponent = true;
 	MaxBowTensionTime = .5f;
+
+	ArrowPathPredictor = CreateDefaultSubobject<UProjectilePathPredictor>(TEXT("ArrowPathPrediction"));
 }
 
 void UBowComponent::InitializeComponent()
@@ -87,53 +91,56 @@ void UBowComponent::Focus(const FInputActionValue& Value)
 	}
 }
 
-void UBowComponent::FireButtonHolding(const FInputActionInstance& ActionInstance)
-{
-	FHitResult TraceLineHitResult;
-	FVector TraceImpactPoint = Pawn->TraceLine(false, TraceLineHitResult);
-	
-	FPredictProjectilePathResult ProjectilePathResult;
-	FArrowParameters ArrowParameters(ArrowProjectileClass, GetSocketTransform("arrow_socket"), TraceImpactPoint
-		, ArrowCDO->CalculateArrowSpeed(ActionInstance.GetElapsedTime(), MaxBowTensionTime));
-	
-	ArrowCDO->PredictArrowPath(GetWorld(),ArrowParameters, false, ProjectilePathResult);
-	
-	if(BowPowerWidget) BowPowerWidget->SetPower(ArrowParameters.Speed, ArrowCDO->GetMinSpeed(), ArrowCDO->GetMaxSpeed());
-}
-
 void UBowComponent::FireButtonPressed()
 {
 	if(BowPowerWidget) BowPowerWidget->AddToViewport();
 }
 
-void UBowComponent::Fire(const FInputActionInstance& ActionInstance)
+FProjectileParams UBowComponent::CreateArrowParams(float BowTensionTime)
 {
 	FHitResult TraceLineHitResult;
 
-	FArrowParameters ArrowParameters(ArrowProjectileClass, GetSocketTransform("arrow_socket")
+	AMummyGameState* GameState = GetWorld()->GetGameState<AMummyGameState>();
+	FVector WindAcceleration = FVector::Zero();
+	if(GameState)
+	{
+		WindAcceleration = GameState->GetWindAcceleration();
+	}
+	FVector Acceleration = FVector(0.f, 0.f, -980 * ArrowCDO->GetGravityScale()) + WindAcceleration;
+	
+	FProjectileParams ArrowParameters(GetSocketTransform(TEXT("arrow_socket"))
+		, ArrowCDO->GetBounds()
 		, Pawn->TraceLine(false, TraceLineHitResult)
-		, ArrowCDO->CalculateArrowSpeed(ActionInstance.GetElapsedTime(), MaxBowTensionTime));
+		, ArrowCDO->CalculateArrowSpeed(BowTensionTime, MaxBowTensionTime)
+		, ArrowCDO->GetMaxSpeed()
+		, Acceleration);
+	
+	FVector Direction = ArrowPathPredictor->GetInitialArrowDirection(*GetWorld(), ArrowParameters, {GetOwner()});
+	ArrowParameters.Transform.SetRotation(Direction.ToOrientationQuat());
+	ArrowParameters.Bounds = ArrowCDO->GetBounds(GetSocketLocation(TEXT("arrow_socket")), Direction);
+
+	return ArrowParameters;
+}
+
+void UBowComponent::FireButtonHolding(const FInputActionInstance& ActionInstance)
+{
+	FProjectileParams ArrowParams = CreateArrowParams(ActionInstance.GetElapsedTime());
 
 	FPredictProjectilePathResult ProjectilePathResult;
-	ArrowCDO->PredictArrowPath(GetWorld(), ArrowParameters, false, ProjectilePathResult);
-
-	FVector InitialVelocityDirection = ArrowParameters.ImpactPoint - ArrowParameters.SpawnTransform.GetLocation();
-	float InitialSpeed = 0.f;
-	if(ArrowCDO->GetGravityScale() != 0.f && !ProjectilePathResult.PathData.IsEmpty())
-	{
-		InitialVelocityDirection = ProjectilePathResult.PathData[0].Velocity;
-		InitialSpeed = InitialVelocityDirection.Length();
-	}
-	else
-	{
-		InitialVelocityDirection = InitialVelocityDirection.GetSafeNormal();
-		InitialSpeed = ArrowParameters.Speed;
-	}
+	ArrowPathPredictor->PredictProjectilePathWithWind(*GetWorld(), ArrowParams, {GetOwner()}, ProjectilePathResult);
 	
-	ArrowParameters.SpawnTransform.SetRotation(InitialVelocityDirection.ToOrientationQuat());
-	ArrowCDO->GetProjectileMovement()->InitialSpeed = InitialSpeed;
+	if(BowPowerWidget) BowPowerWidget->SetPower(ArrowParams.Speed, ArrowCDO->GetMinSpeed(), ArrowCDO->GetMaxSpeed());
+}
 
-	Fire(ArrowParameters.SpawnTransform);
+void UBowComponent::Fire(const FInputActionInstance& ActionInstance)
+{
+	FProjectileParams ArrowParams = CreateArrowParams(ActionInstance.GetElapsedTime());
+
+	FPredictProjectilePathResult ProjectilePathResult;
+	ArrowPathPredictor->PredictProjectilePathWithWind(*GetWorld(), ArrowParams, {GetOwner()}, ProjectilePathResult);
+	
+	ArrowCDO->GetProjectileMovement()->InitialSpeed = (ArrowParams.Transform.GetRotation().Vector() * ArrowParams.Speed).Length();
+	Fire(ArrowParams.Transform);
 }
 
 void UBowComponent::Fire(const FTransform& SpawnTransform)
