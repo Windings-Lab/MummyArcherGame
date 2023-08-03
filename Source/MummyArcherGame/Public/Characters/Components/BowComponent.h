@@ -31,6 +31,9 @@ private:
 		TSubclassOf<class ABasicArrowProjectile> ArrowProjectileClass;
 	UPROPERTY()
 		const ABasicArrowProjectile* ArrowCDO;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="BowSettings", meta = (AllowPrivateAccess = "true"))
+		class UProjectilePathPredictor* ArrowPathPredictor;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=BowSettings, meta = (AllowPrivateAccess = "true"))
 		float MaxBowTensionTime;
@@ -55,7 +58,8 @@ private:
 		void FireButtonHolding(const struct FInputActionInstance& ActionInstance);
 	UFUNCTION()
 		void FireButtonPressed();
-	
+
+		struct FProjectileParams CreateArrowParams(float BowTensionTime);
 	UFUNCTION()
 		void Fire(const struct FInputActionInstance& ActionInstance);
 		void Fire(const FTransform& SpawnTransform);

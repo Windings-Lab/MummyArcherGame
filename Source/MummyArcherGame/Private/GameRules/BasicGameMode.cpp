@@ -2,20 +2,25 @@
 
 #include "GameRules/BasicGameMode.h"
 
+
 #include "EngineUtils.h"
 #include "Characters/Controllers/MummyPlayerController.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameRules/MummyPlayerStart.h"
 #include "GameRules/MummyPlayerState.h"
 #include "UObject/ConstructorHelpers.h"
+#include "GameRules/MummyGameState.h"
+
+
 
 ABasicGameMode::ABasicGameMode()
 	: Super()
 {
 	// set default pawn class to our Blueprinted character
 	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnClassFinder(TEXT("/Game/Characters/Blueprints/BP_MummyCharacter"));
+	static ConstructorHelpers::FClassFinder<AMummyGameState> GameStateClassFinder(TEXT("/Game/GameRules/BP_MummyGameState"));
 	DefaultPawnClass = PlayerPawnClassFinder.Class;
-
+	GameStateClass   = GameStateClassFinder.Class;
 	PlayerStateClass = AMummyPlayerState::StaticClass();
 }
 
