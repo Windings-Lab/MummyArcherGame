@@ -2,8 +2,10 @@
 
 #include "AbstractClasses/Arrow/BasicArrowProjectile.h"
 
+#include "Characters/MummyCharacter.h"
 #include "MummyArcherGame/Public/Engine/Components/BasicProjectileMovementComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 
 ABasicArrowProjectile::ABasicArrowProjectile() 
@@ -69,6 +71,11 @@ void ABasicArrowProjectile::OnHitWithActor(AActor* OtherActor)
 	{
 		Server_ArrowRelativeTransform = Arrow->GetRelativeTransform();
 		Server_RootRelativeTransform = RootComponent->GetRelativeTransform();
+	}
+
+	if(AMummyCharacter* OtherCharacter = Cast<AMummyCharacter>(OtherActor))
+	{
+		UGameplayStatics::ApplyDamage(OtherCharacter, 10.f, nullptr, this, nullptr);
 	}
 }
 
