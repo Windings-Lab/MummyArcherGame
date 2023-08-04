@@ -24,10 +24,6 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Defaults")
 	int32 TeamCount = 2;
-
-private:
-	UPROPERTY()
-	TArray<AMummyPlayerStart*> Starts;
 };
 
 

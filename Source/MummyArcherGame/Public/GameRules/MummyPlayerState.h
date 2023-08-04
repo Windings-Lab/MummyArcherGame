@@ -18,5 +18,7 @@ public:
 	UPROPERTY(Replicated)
 	int32 Team;
 
+protected:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const override;
 	
 };

@@ -26,15 +26,14 @@ ABasicGameMode::ABasicGameMode()
 
 void ABasicGameMode::PostLogin(APlayerController* NewPlayer)
 {
-	Super::PostLogin(NewPlayer);
-
 	if(NewPlayer)
 	{
 		AMummyPlayerState* PS = Cast<AMummyPlayerState>(NewPlayer->PlayerState);
-		if (PS && GameState)
+		if(PS && GameState)
 		{
-			TArray<int> Teams = TArray<int>();
-			for (int32 i = 0; i < TeamCount; i++)	{Teams.Add(0);}
+			TArray<int> Teams;
+			Teams.Init(0, TeamCount);
+			
 			for (APlayerState* State : GameState->PlayerArray)
 			{
 				AMummyPlayerState* OtherPS = Cast<AMummyPlayerState>(State);
@@ -53,8 +52,9 @@ void ABasicGameMode::PostLogin(APlayerController* NewPlayer)
 				}
 			}
 		}
-		//Cast<AMummyPlayerController>(NewPlayer)->Respawn();
 	}
+	
+	Super::PostLogin(NewPlayer);
 }
 
 AActor* ABasicGameMode::ChoosePlayerStart_Implementation(AController* Player)
@@ -66,16 +66,14 @@ AActor* ABasicGameMode::ChoosePlayerStart_Implementation(AController* Player)
 		AMummyPlayerState* PS = Cast<AMummyPlayerState>(Player->PlayerState);
 		if (PS)
 		{
-			Starts.Empty();
 			for (TActorIterator<AMummyPlayerStart> It(GetWorld()); It; ++It)
 			{
 				AMummyPlayerStart* Start = *It;
 				if (Start && Start->Team == PS->Team)
-				{					
-					Starts.Add(Start);
+				{
+					return Start;
 				}
 			}
-			return Starts[FMath::RandRange(0, Starts.Num() - 1)];
 		}
 	}
 	return nullptr;
