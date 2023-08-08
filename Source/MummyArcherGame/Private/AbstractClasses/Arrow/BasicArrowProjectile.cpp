@@ -126,6 +126,11 @@ float ABasicArrowProjectile::CalculateArrowSpeed(const float BowTensionTime, con
 	return Speed;
 }
 
+void ABasicArrowProjectile::SetIgnoredActor(AActor* InActor) const
+{
+	Arrow->IgnoreActorWhenMoving(InActor, true);
+}
+
 void ABasicArrowProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);

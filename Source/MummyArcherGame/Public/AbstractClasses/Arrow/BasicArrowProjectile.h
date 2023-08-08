@@ -92,6 +92,8 @@ public:
 	FProjectileBounds GetBounds() const;
 	float CalculateArrowSpeed(float BowTensionTime, float BowMaxTensionTime) const;
 
+	void SetIgnoredActor(AActor* InActor) const;
+
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	// Called when client arrow still not collided with something, when server arrow is collided

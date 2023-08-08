@@ -16,6 +16,8 @@
 // Sets default values
 ABasicCharacter::ABasicCharacter()
 {
+	PrimaryActorTick.bCanEverTick = true;
+	
 	GetCapsuleComponent()->InitCapsuleSize(35.f, 90.0f);
 	
 	bUseControllerRotationPitch = false;
@@ -95,6 +97,13 @@ FVector ABasicCharacter::TraceLine(bool DrawTrace, FHitResult& HitResult)
 		, 0.f);
 
 	return HitResult.bBlockingHit ? HitResult.ImpactPoint : TraceEndLocation;
+}
+
+void ABasicCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	AimLocation = TraceLine(false, AimHitResult);
 }
 
 void ABasicCharacter::Look(const FInputActionValue& Value)

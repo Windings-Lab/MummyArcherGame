@@ -16,6 +16,21 @@ class MUMMYARCHERGAME_API AMummyCharacter : public ABasicCharacter, public ICanM
 {
 	GENERATED_BODY()
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
+	class UBowComponent* Bow;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
+	class UHealthComponent* Health;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Movement", meta = (AllowPrivateAccess = "true"))
+	UInputAction* MoveAction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Movement", meta = (AllowPrivateAccess = "true"))
+	class UInputAction* JumpAction;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
+	UWidgetComponent* HealthBarWidget;
+
 public:
 	AMummyCharacter();
 
@@ -26,31 +41,17 @@ public:
 		void Heal(int Recovery);
 
 	UFUNCTION(BlueprintCallable)
-		FORCEINLINE	UWidgetComponent* GetHealthBarWidget() const { return HealthBarWidget; };
+		FORCEINLINE	UWidgetComponent* GetHealthBarWidget() const { return HealthBarWidget; }
+
+	UFUNCTION(BlueprintCallable)
+		FORCEINLINE	UBowComponent* GetBowComponent() const { return Bow; }
 
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
-
 private:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
-		class UBowComponent* Bow;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
-		class UHealthComponent* Health;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Movement", meta = (AllowPrivateAccess = "true"))
-		UInputAction* MoveAction;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Movement", meta = (AllowPrivateAccess = "true"))
-		class UInputAction* JumpAction;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
-		UWidgetComponent* HealthBarWidget;
-
-
 	UFUNCTION()
 		virtual void Move(const FInputActionValue& Value) override;
 	UFUNCTION()

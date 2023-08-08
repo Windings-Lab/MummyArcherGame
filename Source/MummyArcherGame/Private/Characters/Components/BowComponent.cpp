@@ -8,11 +8,9 @@
 #include "UI/BowPowerWidget.h"
 #include "AbstractClasses/Arrow/BasicArrowProjectile.h"
 #include "AbstractClasses/Characters/BasicCharacter.h"
-#include "Blueprint/UserWidget.h"
 #include "Camera/CameraComponent.h"
 #include "Engine/ProjectilePathPredictor.h"
 #include "Engine/Components/BasicProjectileMovementComponent.h"
-#include "GameRules/MummyGameState.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/GameHUDWidget.h"
 #include "UI/MummyHUD.h"
@@ -92,24 +90,16 @@ void UBowComponent::FireButtonPressed()
 
 FProjectileParams UBowComponent::CreateArrowParams(float BowTensionTime)
 {
-	FHitResult TraceLineHitResult;
-
-	AMummyGameState* GameState = GetWorld()->GetGameState<AMummyGameState>();
-	FVector WindAcceleration = FVector::Zero();
-	if(GameState)
-	{
-		WindAcceleration = GameState->GetWindAcceleration();
-	}
-	FVector Acceleration = FVector(0.f, 0.f, -980 * ArrowCDO->GetGravityScale()) + WindAcceleration;
+	const FVector Acceleration = FVector(0.f, 0.f, -980 * ArrowCDO->GetGravityScale());
 	
 	FProjectileParams ArrowParameters(GetSocketTransform(TEXT("arrow_socket"))
 		, ArrowCDO->GetBounds()
-		, Pawn->TraceLine(false, TraceLineHitResult)
+		, Pawn->GetAimLocation()
 		, ArrowCDO->CalculateArrowSpeed(BowTensionTime, MaxBowTensionTime)
 		, ArrowCDO->GetMaxSpeed()
 		, Acceleration);
-	
-	FVector Direction = ArrowPathPredictor->GetInitialArrowDirection(*GetWorld(), ArrowParameters, {GetOwner()});
+
+	const FVector Direction = ArrowPathPredictor->GetInitialArrowDirection(*GetWorld(), ArrowParameters, {GetOwner()});
 	ArrowParameters.Transform.SetRotation(Direction.ToOrientationQuat());
 	ArrowParameters.Bounds = ArrowCDO->GetBounds(GetSocketLocation(TEXT("arrow_socket")), Direction);
 
@@ -134,6 +124,7 @@ void UBowComponent::Fire(const FInputActionInstance& ActionInstance)
 	ArrowPathPredictor->PredictProjectilePathWithWind(*GetWorld(), ArrowParams, {GetOwner()}, ProjectilePathResult);
 	
 	ArrowCDO->GetProjectileMovement()->InitialSpeed = (ArrowParams.Transform.GetRotation().Vector() * ArrowParams.Speed).Length();
+	ArrowCDO->SetIgnoredActor(Pawn);
 	Fire(ArrowParams.Transform);
 }
 

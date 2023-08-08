@@ -11,6 +11,24 @@ UCLASS(Blueprintable, BlueprintType, ClassGroup=(Custom), meta=(BlueprintSpawnab
 class MUMMYARCHERGAME_API UBowComponent : public UStaticMeshComponent
 {
 	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, Category=BowSettings, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class ABasicArrowProjectile> ArrowProjectileClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="BowSettings", meta = (AllowPrivateAccess = "true"))
+	class UProjectilePathPredictor* ArrowPathPredictor;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="BowSettings", meta = (AllowPrivateAccess = "true"))
+	float MaxBowTensionTime;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Input|Bow", meta = (AllowPrivateAccess = "true"))
+	class UInputMappingContext* BowMappingContext;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input|Bow", meta = (AllowPrivateAccess = "true"))
+	class UInputAction* BowFireAction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input|Bow", meta = (AllowPrivateAccess = "true"))
+	UInputAction* BowFocusAction;
 	
 public:
 	UBowComponent();
@@ -22,33 +40,6 @@ public:
 
 protected:
 	virtual void InitializeComponent() override;
-
-private:
-	UPROPERTY()
-		class ABasicCharacter* Pawn;
-	
-	UPROPERTY(EditDefaultsOnly, Category=BowSettings, meta = (AllowPrivateAccess = "true"))
-		TSubclassOf<class ABasicArrowProjectile> ArrowProjectileClass;
-	UPROPERTY()
-		const ABasicArrowProjectile* ArrowCDO;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="BowSettings", meta = (AllowPrivateAccess = "true"))
-		class UProjectilePathPredictor* ArrowPathPredictor;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=BowSettings, meta = (AllowPrivateAccess = "true"))
-		float MaxBowTensionTime;
-
-	UPROPERTY()
-		TObjectPtr<UGameHUDWidget> GameHUDWidget;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Input|Bow", meta = (AllowPrivateAccess = "true"))
-		class UInputMappingContext* BowMappingContext;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input|Bow", meta = (AllowPrivateAccess = "true"))
-		class UInputAction* BowFireAction;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input|Bow", meta = (AllowPrivateAccess = "true"))
-		UInputAction* BowFocusAction;
 	
 private:
 	// Action functions
@@ -68,4 +59,15 @@ private:
 	
 	UFUNCTION()
 		void FireButtonReleased();
+
+private:
+	class ABasicCharacter* Pawn;
+	
+	const ABasicArrowProjectile* ArrowCDO;
+	
+	UPROPERTY()
+		TObjectPtr<UGameHUDWidget> GameHUDWidget;
+
+	// Animation Property
+	float CurrentTensionTime;
 };

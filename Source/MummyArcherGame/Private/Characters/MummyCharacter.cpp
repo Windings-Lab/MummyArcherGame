@@ -16,7 +16,7 @@
 AMummyCharacter::AMummyCharacter()
 {
 	Bow = CreateDefaultSubobject<UBowComponent>(TEXT("Bow"));
-	Bow->SetupAttachment(GetFollowCamera());
+	Bow->SetupAttachment(GetMesh(), TEXT("bow_socket"));
 
 	Health = CreateDefaultSubobject<UHealthComponent>(TEXT("Health"));
 
@@ -37,6 +37,8 @@ void AMummyCharacter::Heal(int Recovery)
 void AMummyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	GetMesh()->HideBoneByName(TEXT("Bow"), PBO_None);
 	
 	APlayerController* PlayerController = GetController<APlayerController>();
 	if(!PlayerController) return;
