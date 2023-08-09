@@ -94,7 +94,7 @@ FVector ABasicCharacter::TraceLine(bool DrawTrace, FHitResult& HitResult)
 	const FVector CameraForwardVector = Camera->GetForwardVector();
 	const FVector CameraLocation = Camera->GetComponentLocation();
 
-	const FVector TraceStartLocation = CameraLocation;
+	const FVector TraceStartLocation = UKismetMathLibrary::FindClosestPointOnLine(GetActorLocation(), CameraLocation, CameraForwardVector);
 	const FVector TraceEndLocation = TraceStartLocation + CameraForwardVector * 10000.f;
 	const EDrawDebugTrace::Type DrawDebugTraceType = DrawTrace ? EDrawDebugTrace::Type::ForDuration : EDrawDebugTrace::Type::None;
 	
