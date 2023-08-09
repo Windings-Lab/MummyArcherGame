@@ -6,7 +6,6 @@
 #include "AbstractClasses/Characters/BasicCharacter.h"
 #include "AbstractClasses/Characters/Interfaces/CanJump.h"
 #include "AbstractClasses/Characters/Interfaces/CanMove.h"
-#include "UI/HealthWidget.h"
 #include "MummyCharacter.generated.h"
 
 class UWidgetComponent;
@@ -19,29 +18,14 @@ class MUMMYARCHERGAME_API AMummyCharacter : public ABasicCharacter, public ICanM
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
 	class UBowComponent* Bow;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
-	class UHealthComponent* Health;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Movement", meta = (AllowPrivateAccess = "true"))
 	UInputAction* MoveAction;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Movement", meta = (AllowPrivateAccess = "true"))
 	class UInputAction* JumpAction;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
-	UWidgetComponent* HealthBarWidget;
-
 public:
 	AMummyCharacter();
-
-	UFUNCTION(BlueprintCallable)
-		void Hit(int Damage);
-
-	UFUNCTION(BlueprintCallable)
-		void Heal(int Recovery);
-
-	UFUNCTION(BlueprintCallable)
-		FORCEINLINE	UWidgetComponent* GetHealthBarWidget() const { return HealthBarWidget; }
 
 	UFUNCTION(BlueprintCallable)
 		FORCEINLINE	UBowComponent* GetBowComponent() const { return Bow; }

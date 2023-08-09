@@ -5,33 +5,13 @@
 #include "EnhancedInputComponent.h"
 #include "Characters/Components/BowComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "Camera/CameraComponent.h"
-#include "Characters/Components/HealthComponent.h"
-#include "Characters/Controllers/MummyPlayerController.h"
-#include "Components/WidgetComponent.h"
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/PlayerController.h"
-#include "UI/MummyHUD.h"
 
 AMummyCharacter::AMummyCharacter()
 {
 	Bow = CreateDefaultSubobject<UBowComponent>(TEXT("Bow"));
 	Bow->SetupAttachment(GetMesh(), TEXT("bow_socket"));
-
-	Health = CreateDefaultSubobject<UHealthComponent>(TEXT("Health"));
-
-	HealthBarWidget = CreateDefaultSubobject<UWidgetComponent>((TEXT("Widget")));
-	HealthBarWidget->SetupAttachment(RootComponent);
-}
-
-void AMummyCharacter::Hit(int Damage)
-{
-	Health->Hit(Damage);
-}
-
-void AMummyCharacter::Heal(int Recovery)
-{
-	Health->Heal(Recovery);
 }
 
 void AMummyCharacter::BeginPlay()

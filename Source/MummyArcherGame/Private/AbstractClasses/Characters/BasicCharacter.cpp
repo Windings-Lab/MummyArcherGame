@@ -5,10 +5,14 @@
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "AbstractClasses/Arrow/BasicArrowProjectile.h"
 #include "Camera/CameraComponent.h"
+#include "Characters/Components/HealthComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/WidgetComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
 
 #define TRACE_CHARACTER ECC_GameTraceChannel2
@@ -25,6 +29,8 @@ ABasicCharacter::ABasicCharacter()
 	bUseControllerRotationRoll = false;
 
 	auto* CharacterMesh = GetMesh();
+
+	CharacterMesh->OnComponentHit.AddDynamic(this, &ABasicCharacter::OnHit);
 	
 	CharacterMesh->SetRelativeLocation(FVector(0.f, 0.f, -90.f));
 	CharacterMesh->SetRelativeRotation(FRotator(0.f, 270.f, 0.f));
@@ -54,6 +60,17 @@ ABasicCharacter::ABasicCharacter()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
+
+	Health = CreateDefaultSubobject<UHealthComponent>(TEXT("Health"));
+
+	HealthBarWidget = CreateDefaultSubobject<UWidgetComponent>((TEXT("Widget")));
+	HealthBarWidget->SetupAttachment(RootComponent);
+}
+
+void ABasicCharacter::Hit(int Damage)
+{
+	Health->Hit(Damage);
+	bOnHit = true;
 }
 
 // Called when the game starts or when spawned
@@ -114,6 +131,20 @@ void ABasicCharacter::Look(const FInputActionValue& Value)
 	
 	AddControllerYawInput(LookAxisVector.X);
 	AddControllerPitchInput(LookAxisVector.Y);
+}
+
+void ABasicCharacter::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+	FVector NormalImpulse, const FHitResult& Hit)
+{
+	if(OtherActor->IsA<ABasicArrowProjectile>())
+	{
+		ArrowHitNormal = UKismetMathLibrary::MakeRelativeTransform(OtherActor->GetActorTransform(), GetActorTransform()).GetRotation().Z;
+	}
+}
+
+void ABasicCharacter::Heal(int Recovery)
+{
+	Health->Heal(Recovery);
 }
 
 void ABasicCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

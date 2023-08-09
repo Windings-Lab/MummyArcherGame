@@ -13,6 +13,12 @@ class MUMMYARCHERGAME_API ABasicCharacter : public ACharacter
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Movement", meta = (AllowPrivateAccess = "true"))
 	class UInputMappingContext* DefaultMappingContext;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
+	class UWidgetComponent* HealthBarWidget;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
+	class UHealthComponent* Health;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
 	class USpringArmComponent* CameraBoom;
@@ -30,7 +36,24 @@ public:
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
 	UFUNCTION(BlueprintCallable)
+	void Hit(int Damage);
+
+	UFUNCTION(BlueprintCallable)
+	void Heal(int Recovery);
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE	UWidgetComponent* GetHealthBarWidget() const { return HealthBarWidget; }
+
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE FVector GetAimLocation() const { return AimLocation; }
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE float GetArrowHitNormal() const { return ArrowHitNormal; }
+
+public:
+	// Animation Properties
+	UPROPERTY(BlueprintReadWrite)
+	bool bOnHit = false;
 
 protected:
 	virtual void Tick(float DeltaSeconds) override;
@@ -41,10 +64,15 @@ protected:
 private:
 	UFUNCTION()
 		virtual void Look(const struct FInputActionValue& Value);
+
+	UFUNCTION()
+		void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 	
 	FVector TraceLine(bool DrawTrace, FHitResult& HitResult);
 
 private:
 	FHitResult AimHitResult;
 	FVector AimLocation;
+
+	float ArrowHitNormal;
 };
