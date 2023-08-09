@@ -60,22 +60,20 @@ void ABasicArrowProjectile::OnArrowHit(UPrimitiveComponent* HitComponent, AActor
 {
 	if (OtherActor == nullptr || OtherActor == this) return;
 
-	OnHitWithActor(OtherActor);
-}
-
-void ABasicArrowProjectile::OnHitWithActor(AActor* OtherActor)
-{
-	AttachToActor(OtherActor, FAttachmentTransformRules::KeepWorldTransform);
+	if(ABasicCharacter* OtherCharacter = Cast<ABasicCharacter>(OtherActor))
+	{
+		AttachToComponent(OtherCharacter->GetMesh(), FAttachmentTransformRules::KeepWorldTransform, Hit.BoneName);
+		UGameplayStatics::ApplyDamage(OtherCharacter, 10.f, nullptr, this, nullptr);
+	}
+	else
+	{
+		AttachToActor(OtherActor, FAttachmentTransformRules::KeepWorldTransform);
+	}
 
 	if(GetOwner()->HasAuthority())
 	{
 		Server_ArrowRelativeTransform = Arrow->GetRelativeTransform();
 		Server_RootRelativeTransform = RootComponent->GetRelativeTransform();
-	}
-
-	if(AMummyCharacter* OtherCharacter = Cast<AMummyCharacter>(OtherActor))
-	{
-		UGameplayStatics::ApplyDamage(OtherCharacter, 10.f, nullptr, this, nullptr);
 	}
 }
 

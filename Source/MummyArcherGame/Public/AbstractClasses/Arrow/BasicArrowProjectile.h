@@ -118,8 +118,6 @@ private:
 	UFUNCTION()
 	void OnArrowHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
-	void OnHitWithActor(AActor* OtherActor);
-
 private:
 	UPROPERTY(Replicated)
 	FTransform Server_RootRelativeTransform;
