@@ -66,19 +66,19 @@ void UBowComponent::RemoveBowMappingContext(UEnhancedInputLocalPlayerSubsystem* 
 
 void UBowComponent::Focus(const FInputActionValue& Value)
 {
-	const bool Focused = Value.Get<bool>();
+	bFocused = Value.Get<bool>();
 	auto* Camera = Pawn->GetFollowCamera();
-	if(Focused)
+	if(bFocused)
 	{
 		Camera->SetFieldOfView(30.f);
-		Pawn->bUseControllerRotationYaw = true;
+		bBowTensionIdle = true;
 	}
 	else
 	{
 		Camera->SetFieldOfView(90.f);
-		if(!bFireButtonPressed)
+		if(!bFirePressed)
 		{
-			Pawn->bUseControllerRotationYaw = false;
+			bBowTensionIdle = false;
 		}
 	}
 }
@@ -87,16 +87,19 @@ void UBowComponent::FireButtonPressed()
 {
 	if(GameHUDWidget) GameHUDWidget->ShowBowPower();
 
-	Pawn->bUseControllerRotationYaw = true;
-	bFireButtonPressed = true;
+	bBowTensionIdle    = true;
+	bFirePressed = true;
 }
 
 void UBowComponent::FireButtonReleased()
 {
 	if(GameHUDWidget) GameHUDWidget->HideBowPower();
 
-	Pawn->bUseControllerRotationYaw = false;
-	bFireButtonPressed = false;
+	bFirePressed = false;
+	if(!bFocused)
+	{
+		bBowTensionIdle = false;
+	}
 }
 
 FProjectileParams UBowComponent::CreateArrowParams(float BowTensionTime)

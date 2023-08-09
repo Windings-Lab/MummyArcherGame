@@ -29,6 +29,9 @@ class MUMMYARCHERGAME_API UBowComponent : public UStaticMeshComponent
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input|Bow", meta = (AllowPrivateAccess = "true"))
 	UInputAction* BowFocusAction;
+
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
+		bool bBowTensionIdle;
 	
 public:
 	UBowComponent();
@@ -70,5 +73,6 @@ private:
 
 	// Animation Property
 	float CurrentTensionTime;
-	bool bFireButtonPressed;
+	bool bFocused;
+	bool bFirePressed;
 };
