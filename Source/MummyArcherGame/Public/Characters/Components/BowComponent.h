@@ -30,10 +30,10 @@ class MUMMYARCHERGAME_API UBowComponent : public UStaticMeshComponent
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input|Bow", meta = (AllowPrivateAccess = "true"))
 	UInputAction* BowFocusAction;
 
-	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
+	UPROPERTY(Replicated, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
 		bool bBowTensionIdle;
 
-	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
+	UPROPERTY(Replicated, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
 		bool bFirePressed;
 	
 public:
@@ -46,15 +46,31 @@ public:
 
 protected:
 	virtual void InitializeComponent() override;
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 private:
 	// Action functions
 	UFUNCTION()
 		void Focus(const struct FInputActionValue& Value);
+	UFUNCTION(Server, Reliable)
+		void Server_Focus(bool InFocused);
+	UFUNCTION(NetMulticast, Reliable)
+		void Multicast_Focus(bool InFocused);
 	UFUNCTION()
 		void FireButtonHolding(const struct FInputActionInstance& ActionInstance);
 	UFUNCTION()
 		void FireButtonPressed();
+	UFUNCTION(Server, Reliable)
+		void Server_FireButtonPressed();
+	UFUNCTION(NetMulticast, Reliable)
+		void Multicast_FireButtonPressed();
+	UFUNCTION()
+		void FireButtonReleased();
+	UFUNCTION(Server, Reliable)
+		void Server_FireButtonReleased();
+	UFUNCTION(NetMulticast, Reliable)
+		void Multicast_FireButtonReleased();
 
 		struct FProjectileParams CreateArrowParams(float BowTensionTime);
 	UFUNCTION()
@@ -62,9 +78,6 @@ private:
 		void Fire(const FTransform& SpawnTransform);
 	UFUNCTION(Server, Reliable)
 		void Server_Fire(const FTransform& SpawnTransform);
-	
-	UFUNCTION()
-		void FireButtonReleased();
 
 private:
 	class ABasicCharacter* Pawn;

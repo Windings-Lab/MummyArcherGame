@@ -12,6 +12,7 @@
 #include "Engine/ProjectilePathPredictor.h"
 #include "Engine/Components/BasicProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 #include "UI/GameHUDWidget.h"
 #include "UI/MummyHUD.h"
 
@@ -36,6 +37,14 @@ void UBowComponent::InitializeComponent()
 	{
 		ArrowCDO = Cast<ABasicArrowProjectile>(ArrowProjectileClass->ClassDefaultObject);
 	}
+}
+
+void UBowComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UBowComponent, bFirePressed);
+	DOREPLIFETIME(UBowComponent, bBowTensionIdle);
 }
 
 void UBowComponent::SetupPlayerInput(UInputComponent* PlayerInputComponent)
@@ -81,20 +90,79 @@ void UBowComponent::Focus(const FInputActionValue& Value)
 			bBowTensionIdle = false;
 		}
 	}
+
+	Server_Focus(bFocused);
+}
+
+void UBowComponent::Server_Focus_Implementation(bool InFocused)
+{
+	Multicast_Focus(InFocused);
+}
+
+void UBowComponent::Multicast_Focus_Implementation(bool InFocused)
+{
+	if(Pawn->IsLocallyControlled()) return;
+
+	bFocused = InFocused;
+	
+	if(bFocused)
+	{
+		bBowTensionIdle = true;
+	}
+	else
+	{
+		if(!bFirePressed)
+		{
+			bBowTensionIdle = false;
+		}
+	}
 }
 
 void UBowComponent::FireButtonPressed()
 {
 	if(GameHUDWidget) GameHUDWidget->ShowBowPower();
+	
+	bBowTensionIdle = true;
+	bFirePressed	= true;
 
-	bBowTensionIdle    = true;
-	bFirePressed = true;
+	Server_FireButtonPressed();
+}
+
+void UBowComponent::Server_FireButtonPressed_Implementation()
+{
+	Multicast_FireButtonPressed();
+}
+
+void UBowComponent::Multicast_FireButtonPressed_Implementation()
+{
+	if(Pawn->IsLocallyControlled()) return;
+
+	bBowTensionIdle = true;
+	bFirePressed	= true;
 }
 
 void UBowComponent::FireButtonReleased()
 {
 	if(GameHUDWidget) GameHUDWidget->HideBowPower();
 
+	bFirePressed = false;
+	if(!bFocused)
+	{
+		bBowTensionIdle = false;
+	}
+
+	Server_FireButtonReleased();
+}
+
+void UBowComponent::Server_FireButtonReleased_Implementation()
+{
+	Multicast_FireButtonReleased();
+}
+
+void UBowComponent::Multicast_FireButtonReleased_Implementation()
+{
+	if(Pawn->IsLocallyControlled()) return;
+	
 	bFirePressed = false;
 	if(!bFocused)
 	{

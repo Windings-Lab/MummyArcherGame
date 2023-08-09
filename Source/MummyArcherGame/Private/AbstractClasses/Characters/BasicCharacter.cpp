@@ -14,6 +14,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Net/UnrealNetwork.h"
 
 #define TRACE_CHARACTER ECC_GameTraceChannel2
 
@@ -87,6 +88,13 @@ void ABasicCharacter::BeginPlay()
 	Subsystem->AddMappingContext(DefaultMappingContext, 0);
 }
 
+void ABasicCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ABasicCharacter, AimOffset);
+}
+
 
 FVector ABasicCharacter::TraceLine(bool DrawTrace, FHitResult& HitResult)
 {
@@ -116,6 +124,35 @@ FVector ABasicCharacter::TraceLine(bool DrawTrace, FHitResult& HitResult)
 	return HitResult.bBlockingHit ? HitResult.ImpactPoint : TraceEndLocation;
 }
 
+FRotator ABasicCharacter::GetAimOffset()
+{
+	AimOffset = UKismetMathLibrary::RInterpTo(AimOffset
+	, UKismetMathLibrary::NormalizedDeltaRotator(UKismetMathLibrary::FindLookAtRotation(GetActorLocation() + FVector(0.f, 0.f, BaseEyeHeight),GetAimLocation()), GetActorRotation())
+	, GetWorld()->GetDeltaSeconds()
+	, 10.f);
+
+	float ClampPitch = FMath::Clamp(AimOffset.Pitch, -90.f, 90.f);
+	float ClampYaw   = FMath::Clamp(AimOffset.Yaw, -90.f, 90.f);
+
+	AimOffset = FRotator(ClampPitch, ClampYaw, 0.f);
+
+	Server_UpdateAimOffset(AimOffset);
+
+	return AimOffset;
+}
+
+void ABasicCharacter::Server_UpdateAimOffset_Implementation(const FRotator& InAimOffset)
+{
+	Multicast_UpdateAimOffset(InAimOffset);
+}
+
+void ABasicCharacter::Multicast_UpdateAimOffset_Implementation(const FRotator& InAimOffset)
+{
+	if(IsLocallyControlled()) return;
+
+	AimOffset = InAimOffset;
+}
+
 void ABasicCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
@@ -134,7 +171,7 @@ void ABasicCharacter::Look(const FInputActionValue& Value)
 }
 
 void ABasicCharacter::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-	FVector NormalImpulse, const FHitResult& Hit)
+                            FVector NormalImpulse, const FHitResult& Hit)
 {
 	if(OtherActor->IsA<ABasicArrowProjectile>())
 	{

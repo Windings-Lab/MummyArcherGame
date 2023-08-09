@@ -29,6 +29,9 @@ class MUMMYARCHERGAME_API ABasicCharacter : public ACharacter
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Movement", meta = (AllowPrivateAccess = "true"))
 	class UInputAction* LookAction;
 
+	UPROPERTY(Replicated)
+	FRotator AimOffset;
+
 public:
 	ABasicCharacter();
 
@@ -50,6 +53,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE float GetArrowHitNormal() const { return ArrowHitNormal; }
 
+	UFUNCTION(BlueprintCallable)
+		FRotator GetAimOffset();
+
 public:
 	// Animation Properties
 	UPROPERTY(BlueprintReadWrite)
@@ -61,9 +67,17 @@ protected:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void BeginPlay() override;
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 private:
 	UFUNCTION()
 		virtual void Look(const struct FInputActionValue& Value);
+
+	UFUNCTION(Server, Reliable)
+		void Server_UpdateAimOffset(const FRotator& InAimOffset);
+
+	UFUNCTION(NetMulticast, Reliable)
+		void Multicast_UpdateAimOffset(const FRotator& InAimOffset);
 
 	UFUNCTION()
 		void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
