@@ -4,6 +4,8 @@
 
 
 #include "EngineUtils.h"
+#include "AbstractClasses/Characters/BasicCharacter.h"
+#include "Characters/MummyCharacter.h"
 #include "Characters/Controllers/MummyPlayerController.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameRules/MummyPlayerStart.h"
@@ -66,15 +68,23 @@ AActor* ABasicGameMode::ChoosePlayerStart_Implementation(AController* Player)
 		AMummyPlayerState* PS = Cast<AMummyPlayerState>(Player->PlayerState);
 		if (PS)
 		{
+			TArray<AMummyPlayerStart*> Starts;
 			for (TActorIterator<AMummyPlayerStart> It(GetWorld()); It; ++It)
 			{
 				AMummyPlayerStart* Start = *It;
-				if (Start && Start->Team == PS->Team)
+				if (Start && Start->Team == PS->Team && Start->bIsFree)
 				{
-					return Start;
+					Starts.Add(Start);
 				}
 			}
-		}
+			
+			AMummyPlayerStart* Start = Starts[FMath::RandRange(0, Starts.Num() - 1)];
+			if (!Player->HasAuthority())
+			{
+				Start->bIsFree = false;
+			}
+			return Start;
+		}		
 	}
 	return nullptr;
 }

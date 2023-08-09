@@ -17,5 +17,7 @@ class MUMMYARCHERGAME_API AMummyPlayerStart : public APlayerStart
 public:
 	UPROPERTY(EditAnywhere, Category = "Defaults")
 	int32 Team;
+
+	bool bIsFree = true;
 	
 };

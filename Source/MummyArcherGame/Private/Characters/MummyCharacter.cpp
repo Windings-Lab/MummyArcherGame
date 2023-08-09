@@ -7,10 +7,14 @@
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/PlayerController.h"
+#include "GameRules/MummyPlayerState.h"
+#include "Kismet/GameplayStatics.h"
+#include "UI/MummyHUD.h"
 
 AMummyCharacter::AMummyCharacter()
 {
 	Bow = CreateDefaultSubobject<UBowComponent>(TEXT("Bow"));
+
 	Bow->SetupAttachment(GetMesh(), TEXT("bow_socket"));
 }
 
