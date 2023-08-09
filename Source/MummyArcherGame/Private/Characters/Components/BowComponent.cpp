@@ -70,22 +70,33 @@ void UBowComponent::Focus(const FInputActionValue& Value)
 	auto* Camera = Pawn->GetFollowCamera();
 	if(Focused)
 	{
-
 		Camera->SetFieldOfView(30.f);
-		//if(!SightWidget) return;
-		//SightWidget->AddToViewport();
+		Pawn->bUseControllerRotationYaw = true;
 	}
 	else
 	{
 		Camera->SetFieldOfView(90.f);
-		//if(!SightWidget) return;
-		//SightWidget->AddToViewport();
+		if(!bFireButtonPressed)
+		{
+			Pawn->bUseControllerRotationYaw = false;
+		}
 	}
 }
 
 void UBowComponent::FireButtonPressed()
 {
 	if(GameHUDWidget) GameHUDWidget->ShowBowPower();
+
+	Pawn->bUseControllerRotationYaw = true;
+	bFireButtonPressed = true;
+}
+
+void UBowComponent::FireButtonReleased()
+{
+	if(GameHUDWidget) GameHUDWidget->HideBowPower();
+
+	Pawn->bUseControllerRotationYaw = false;
+	bFireButtonPressed = false;
 }
 
 FProjectileParams UBowComponent::CreateArrowParams(float BowTensionTime)
@@ -153,9 +164,4 @@ void UBowComponent::Server_Fire_Implementation(const FTransform& SpawnTransform)
 	ActorSpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 	
 	GetWorld()->SpawnActor(ArrowProjectileClass, &SpawnTransform, ActorSpawnParameters);
-}
-
-void UBowComponent::FireButtonReleased()
-{
-	if(GameHUDWidget) GameHUDWidget->HideBowPower();
 }

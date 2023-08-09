@@ -70,4 +70,5 @@ private:
 
 	// Animation Property
 	float CurrentTensionTime;
+	bool bFireButtonPressed;
 };
