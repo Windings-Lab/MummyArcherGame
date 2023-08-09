@@ -15,7 +15,7 @@ class MUMMYARCHERGAME_API AMummyPlayerState : public APlayerState
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(Replicated)
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite)
 	int32 Team;
 
 protected:
