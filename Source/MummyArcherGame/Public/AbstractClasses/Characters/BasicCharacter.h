@@ -29,9 +29,6 @@ class MUMMYARCHERGAME_API ABasicCharacter : public ACharacter
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Movement", meta = (AllowPrivateAccess = "true"))
 	class UInputAction* LookAction;
 
-	UPROPERTY(Replicated)
-	FRotator AimOffset;
-
 public:
 	ABasicCharacter();
 
@@ -61,6 +58,14 @@ public:
 	UPROPERTY(BlueprintReadWrite)
 	bool bOnHit = false;
 
+	UPROPERTY(Replicated)
+	FRotator AimOffset;
+
+	UPROPERTY(Replicated)
+		FHitResult AimHitResult;
+	UPROPERTY(Replicated)
+		FVector AimLocation;
+
 protected:
 	virtual void Tick(float DeltaSeconds) override;
 	
@@ -76,17 +81,11 @@ private:
 	UFUNCTION(Server, Reliable)
 		void Server_UpdateAimOffset(const FRotator& InAimOffset);
 
-	UFUNCTION(NetMulticast, Reliable)
-		void Multicast_UpdateAimOffset(const FRotator& InAimOffset);
-
 	UFUNCTION()
 		void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 	
 	FVector TraceLine(bool DrawTrace, FHitResult& HitResult);
 
 private:
-	FHitResult AimHitResult;
-	FVector AimLocation;
-
 	float ArrowHitNormal;
 };

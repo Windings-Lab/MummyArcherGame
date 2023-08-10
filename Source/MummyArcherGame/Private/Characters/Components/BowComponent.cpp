@@ -96,13 +96,6 @@ void UBowComponent::Focus(const FInputActionValue& Value)
 
 void UBowComponent::Server_Focus_Implementation(bool InFocused)
 {
-	Multicast_Focus(InFocused);
-}
-
-void UBowComponent::Multicast_Focus_Implementation(bool InFocused)
-{
-	if(Pawn->IsLocallyControlled()) return;
-
 	bFocused = InFocused;
 	
 	if(bFocused)
@@ -130,13 +123,6 @@ void UBowComponent::FireButtonPressed()
 
 void UBowComponent::Server_FireButtonPressed_Implementation()
 {
-	Multicast_FireButtonPressed();
-}
-
-void UBowComponent::Multicast_FireButtonPressed_Implementation()
-{
-	if(Pawn->IsLocallyControlled()) return;
-
 	bBowTensionIdle = true;
 	bFirePressed	= true;
 }
@@ -156,13 +142,6 @@ void UBowComponent::FireButtonReleased()
 
 void UBowComponent::Server_FireButtonReleased_Implementation()
 {
-	Multicast_FireButtonReleased();
-}
-
-void UBowComponent::Multicast_FireButtonReleased_Implementation()
-{
-	if(Pawn->IsLocallyControlled()) return;
-	
 	bFirePressed = false;
 	if(!bFocused)
 	{

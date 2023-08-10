@@ -93,6 +93,8 @@ void ABasicCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ABasicCharacter, AimOffset);
+	DOREPLIFETIME(ABasicCharacter, AimLocation);
+	DOREPLIFETIME(ABasicCharacter, AimHitResult);
 }
 
 
@@ -143,21 +145,17 @@ FRotator ABasicCharacter::GetAimOffset()
 
 void ABasicCharacter::Server_UpdateAimOffset_Implementation(const FRotator& InAimOffset)
 {
-	Multicast_UpdateAimOffset(InAimOffset);
-}
-
-void ABasicCharacter::Multicast_UpdateAimOffset_Implementation(const FRotator& InAimOffset)
-{
-	if(IsLocallyControlled()) return;
-
 	AimOffset = InAimOffset;
 }
 
 void ABasicCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-
-	AimLocation = TraceLine(false, AimHitResult);
+	
+	if(HasAuthority())
+	{
+		AimLocation = TraceLine(false, AimHitResult);
+	}
 }
 
 void ABasicCharacter::Look(const FInputActionValue& Value)

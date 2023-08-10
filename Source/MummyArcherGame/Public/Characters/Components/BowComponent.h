@@ -55,22 +55,16 @@ private:
 		void Focus(const struct FInputActionValue& Value);
 	UFUNCTION(Server, Reliable)
 		void Server_Focus(bool InFocused);
-	UFUNCTION(NetMulticast, Reliable)
-		void Multicast_Focus(bool InFocused);
 	UFUNCTION()
 		void FireButtonHolding(const struct FInputActionInstance& ActionInstance);
 	UFUNCTION()
 		void FireButtonPressed();
 	UFUNCTION(Server, Reliable)
 		void Server_FireButtonPressed();
-	UFUNCTION(NetMulticast, Reliable)
-		void Multicast_FireButtonPressed();
 	UFUNCTION()
 		void FireButtonReleased();
 	UFUNCTION(Server, Reliable)
 		void Server_FireButtonReleased();
-	UFUNCTION(NetMulticast, Reliable)
-		void Multicast_FireButtonReleased();
 
 		struct FProjectileParams CreateArrowParams(float BowTensionTime);
 	UFUNCTION()
