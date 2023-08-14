@@ -29,12 +29,12 @@ class MUMMYARCHERGAME_API UBowComponent : public UStaticMeshComponent
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Input|Bow", meta = (AllowPrivateAccess = "true"))
 	UInputAction* BowFocusAction;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Animation", meta = (AllowPrivateAccess = "true"))
+	FRotator OnTensionOffset;
 
-	UPROPERTY(Replicated, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
-		bool bBowTensionIdle;
-
-	UPROPERTY(Replicated, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
-		bool bFirePressed;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Animation", meta = (AllowPrivateAccess = "true"))
+	FRotator OnFirePressedOffset;
 	
 public:
 	UBowComponent();
@@ -46,7 +46,6 @@ public:
 
 protected:
 	virtual void InitializeComponent() override;
-
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 private:
@@ -54,7 +53,7 @@ private:
 	UFUNCTION()
 		void Focus(const struct FInputActionValue& Value);
 	UFUNCTION(Server, Reliable)
-		void Server_Focus(bool InFocused);
+		void Server_Focus(bool InFocused, bool InBowTensionIdle);
 	UFUNCTION()
 		void FireButtonHolding(const struct FInputActionInstance& ActionInstance);
 	UFUNCTION()
@@ -64,7 +63,7 @@ private:
 	UFUNCTION()
 		void FireButtonReleased();
 	UFUNCTION(Server, Reliable)
-		void Server_FireButtonReleased();
+		void Server_FireButtonReleased(bool InBowTensionIdle);
 
 		struct FProjectileParams CreateArrowParams(float BowTensionTime);
 	UFUNCTION()
@@ -82,6 +81,10 @@ private:
 		TObjectPtr<UGameHUDWidget> GameHUDWidget;
 
 	// Animation Property
-	float CurrentTensionTime;
+	UPROPERTY(Replicated, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
 	bool bFocused;
+	UPROPERTY(Replicated, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
+	bool bBowTensionIdle;
+	UPROPERTY(Replicated, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
+	bool bFirePressed;
 };

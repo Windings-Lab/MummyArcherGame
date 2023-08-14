@@ -43,8 +43,9 @@ void UBowComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(UBowComponent, bFirePressed);
-	DOREPLIFETIME(UBowComponent, bBowTensionIdle);
+	DOREPLIFETIME_CONDITION(UBowComponent, bFocused, COND_SkipOwner)
+	DOREPLIFETIME_CONDITION(UBowComponent, bFirePressed, COND_SkipOwner);
+	DOREPLIFETIME_CONDITION(UBowComponent, bBowTensionIdle, COND_SkipOwner);
 }
 
 void UBowComponent::SetupPlayerInput(UInputComponent* PlayerInputComponent)
@@ -91,24 +92,13 @@ void UBowComponent::Focus(const FInputActionValue& Value)
 		}
 	}
 
-	Server_Focus(bFocused);
+	Server_Focus(bFocused, bBowTensionIdle);
 }
 
-void UBowComponent::Server_Focus_Implementation(bool InFocused)
+void UBowComponent::Server_Focus_Implementation(bool InFocused, bool InBowTensionIdle)
 {
 	bFocused = InFocused;
-	
-	if(bFocused)
-	{
-		bBowTensionIdle = true;
-	}
-	else
-	{
-		if(!bFirePressed)
-		{
-			bBowTensionIdle = false;
-		}
-	}
+	bBowTensionIdle = InBowTensionIdle;
 }
 
 void UBowComponent::FireButtonPressed()
@@ -137,16 +127,13 @@ void UBowComponent::FireButtonReleased()
 		bBowTensionIdle = false;
 	}
 
-	Server_FireButtonReleased();
+	Server_FireButtonReleased(bBowTensionIdle);
 }
 
-void UBowComponent::Server_FireButtonReleased_Implementation()
+void UBowComponent::Server_FireButtonReleased_Implementation(bool InBowTensionIdle)
 {
 	bFirePressed = false;
-	if(!bFocused)
-	{
-		bBowTensionIdle = false;
-	}
+	bBowTensionIdle = InBowTensionIdle;
 }
 
 FProjectileParams UBowComponent::CreateArrowParams(float BowTensionTime)

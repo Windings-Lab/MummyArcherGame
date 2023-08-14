@@ -22,7 +22,6 @@
 ABasicCharacter::ABasicCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	
 	GetCapsuleComponent()->InitCapsuleSize(35.f, 90.0f);
 	
 	bUseControllerRotationPitch = false;
@@ -68,6 +67,12 @@ ABasicCharacter::ABasicCharacter()
 	HealthBarWidget->SetupAttachment(RootComponent);
 }
 
+FVector ABasicCharacter::GetAimLocation()
+{
+	FHitResult HitResult;
+	return TraceLine(false, HitResult);
+}
+
 void ABasicCharacter::Hit(int Damage)
 {
 	Health->Hit(Damage);
@@ -88,15 +93,22 @@ void ABasicCharacter::BeginPlay()
 	Subsystem->AddMappingContext(DefaultMappingContext, 0);
 }
 
+void ABasicCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if(IsLocallyControlled())
+	{
+		UpdateAim();
+	}
+}
+
 void ABasicCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(ABasicCharacter, AimOffset);
-	DOREPLIFETIME(ABasicCharacter, AimLocation);
-	DOREPLIFETIME(ABasicCharacter, AimHitResult);
+	DOREPLIFETIME_CONDITION(ABasicCharacter, AimOffset, COND_SkipOwner);
 }
-
 
 FVector ABasicCharacter::TraceLine(bool DrawTrace, FHitResult& HitResult)
 {
@@ -126,42 +138,72 @@ FVector ABasicCharacter::TraceLine(bool DrawTrace, FHitResult& HitResult)
 	return HitResult.bBlockingHit ? HitResult.ImpactPoint : TraceEndLocation;
 }
 
-FRotator ABasicCharacter::GetAimOffset()
+FRotator ABasicCharacter::RInterpTo(const FRotator& Current, const FRotator& Target, float DeltaTime, float InterpSpeed)
 {
-	AimOffset = UKismetMathLibrary::RInterpTo(AimOffset
-	, UKismetMathLibrary::NormalizedDeltaRotator(UKismetMathLibrary::FindLookAtRotation(GetActorLocation() + FVector(0.f, 0.f, BaseEyeHeight),GetAimLocation()), GetActorRotation())
-	, GetWorld()->GetDeltaSeconds()
-	, 10.f);
+	double ClampTargetYaw = FMath::ClampAngle(Target.Yaw, -90.f, 90.f);
+	FRotator TargetRot = FRotator(Target.Pitch, ClampTargetYaw, Target.Roll);
+	// if DeltaTime is 0, do not perform any interpolation (Location was already calculated for that frame)
+	if( DeltaTime == 0.f || Current == TargetRot )
+	{
+		return Current;
+	}
 
-	float ClampPitch = FMath::Clamp(AimOffset.Pitch, -90.f, 90.f);
-	float ClampYaw   = FMath::Clamp(AimOffset.Yaw, -90.f, 90.f);
+	// If no interp speed, jump to target value
+	if( InterpSpeed <= 0.f )
+	{
+		return Target;
+	}
 
-	AimOffset = FRotator(ClampPitch, ClampYaw, 0.f);
+	const float DeltaInterpSpeed = InterpSpeed * DeltaTime;
 
-	Server_UpdateAimOffset(AimOffset);
+	const FRotator Delta = (TargetRot - Current).GetNormalized();
+	
+	// If steps are too small, just return Target and assume we have reached our destination.
+	if (Delta.IsNearlyZero())
+	{
+		return TargetRot;
+	}
 
-	return AimOffset;
+	// Delta Move, Clamp so we do not over shoot.
+	const FRotator DeltaMove = Delta * FMath::Clamp<float>(DeltaInterpSpeed, 0.f, 1.f);
+	FRotator Result = Current + DeltaMove;
+	if(Result.Yaw > 90.f || Result.Yaw < -90.f)
+	{
+		Result = Current - DeltaMove;
+	}
+
+	Result.Normalize();
+	double ClampYaw = FMath::Clamp(Result.Yaw, -90.0, 90.0);
+	Result.Yaw = ClampYaw;
+	
+	return Result;
 }
 
-void ABasicCharacter::Server_UpdateAimOffset_Implementation(const FRotator& InAimOffset)
+void ABasicCharacter::UpdateAim()
+{
+	// TODO: Fix Aim Offset
+	FRotator ControlRot = UKismetMathLibrary::NormalizedDeltaRotator(GetControlRotation(), GetActorRotation());
+	FRotator CurrentRot = FRotator(AimOffset.X, AimOffset.Y, 0.f);
+	
+	FRotator ResultRot = RInterpTo(CurrentRot, ControlRot, GetWorld()->GetDeltaSeconds(), 10.f);
+	FVector Result = FVector(ResultRot.Pitch, ResultRot.Yaw, 0.f);
+		
+	if(AimOffset != Result)
+	{
+		AimOffset = Result;
+		Server_UpdateAim(AimOffset);
+	}
+}
+
+void ABasicCharacter::Server_UpdateAim_Implementation(const FVector& InAimOffset)
 {
 	AimOffset = InAimOffset;
-}
-
-void ABasicCharacter::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-	
-	if(HasAuthority())
-	{
-		AimLocation = TraceLine(false, AimHitResult);
-	}
 }
 
 void ABasicCharacter::Look(const FInputActionValue& Value)
 {
 	if (Controller == nullptr) return;
-	
+
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 	
 	AddControllerYawInput(LookAxisVector.X);

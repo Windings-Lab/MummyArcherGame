@@ -34,6 +34,7 @@ public:
 
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	FVector GetAimLocation();
 
 	UFUNCTION(BlueprintCallable)
 	void Hit(int Damage);
@@ -41,51 +42,38 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void Heal(int Recovery);
 
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE	UWidgetComponent* GetHealthBarWidget() const { return HealthBarWidget; }
-
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE FVector GetAimLocation() const { return AimLocation; }
-
-	UFUNCTION(BlueprintCallable)
-	FORCEINLINE float GetArrowHitNormal() const { return ArrowHitNormal; }
-
-	UFUNCTION(BlueprintCallable)
-		FRotator GetAimOffset();
-
-public:
-	// Animation Properties
-	UPROPERTY(BlueprintReadWrite)
-	bool bOnHit = false;
-
-	UPROPERTY(Replicated)
-	FRotator AimOffset;
-
-	UPROPERTY(Replicated)
-		FHitResult AimHitResult;
-	UPROPERTY(Replicated)
-		FVector AimLocation;
-
 protected:
-	virtual void Tick(float DeltaSeconds) override;
-	
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void BeginPlay() override;
 
+	virtual void Tick(float DeltaSeconds) override;
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	FRotator RInterpTo( const FRotator& Current, const FRotator& Target, float DeltaTime, float InterpSpeed);
 
 private:
 	UFUNCTION()
 		virtual void Look(const struct FInputActionValue& Value);
 
-	UFUNCTION(Server, Reliable)
-		void Server_UpdateAimOffset(const FRotator& InAimOffset);
-
 	UFUNCTION()
 		void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
-	
+
 	FVector TraceLine(bool DrawTrace, FHitResult& HitResult);
+	
+	UFUNCTION(Server, Reliable)
+		void Server_UpdateAim(const FVector& InAimOffset);
+
+	void UpdateAim();
 
 private:
+	// Animation Properties
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float ArrowHitNormal;
+	
+	UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	bool bOnHit = false;
+
+	UPROPERTY(Replicated, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	FVector AimOffset;
 };
