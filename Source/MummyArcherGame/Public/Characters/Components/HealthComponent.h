@@ -2,8 +2,11 @@
 
 #pragma once
 
+#include <GameRules/MummyGameState.h>
+
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "UI/GameHUDWidget.h"
 #include "HealthComponent.generated.h"
 
@@ -39,6 +42,8 @@ public:
 		void Kill()
 	{
 		bIsDead = true;
+		Cast<AMummyGameState>(UGameplayStatics::GetGameState(GetWorld()))->OnPlayerKill();
+		
 	}
 
 protected:

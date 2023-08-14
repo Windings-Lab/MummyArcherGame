@@ -42,6 +42,27 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void Heal(int Recovery);
 
+	UFUNCTION(BlueprintCallable)
+	bool IsDead();
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE	UWidgetComponent* GetHealthBarWidget() const { return HealthBarWidget; }
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE FVector GetAimLocation() const { return AimLocation; }
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE float GetArrowHitNormal() const { return ArrowHitNormal; }
+
+	UFUNCTION(BlueprintCallable)
+	FVector GetAimOffset();
+
+public:
+	UPROPERTY(Replicated)
+		FHitResult AimHitResult;
+	UPROPERTY(Replicated)
+		FVector AimLocation;
+
 protected:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void BeginPlay() override;
