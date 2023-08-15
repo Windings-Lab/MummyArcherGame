@@ -81,6 +81,10 @@ private:
 	UFUNCTION(Server, Reliable)
 		void Server_Fire(const FTransform& SpawnTransform);
 
+	// Spline
+	void ResetSpline();
+	void DrawSpline(const struct FPredictProjectilePathResult& ProjectilePathResult);
+
 private:
 	class ABasicCharacter* Pawn;
 	const ABasicArrowProjectile* ArrowCDO;

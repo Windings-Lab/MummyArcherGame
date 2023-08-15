@@ -134,13 +134,7 @@ void UBowComponent::FireButtonReleased()
 		bBowTensionIdle = false;
 	}
 
-	ArrowSplinePath->ClearSplinePoints();
-	for (auto* SplineMesh : SplineMeshes)
-	{
-		SplineMesh->DestroyComponent();
-	}
-	SplineMeshes.Empty();
-
+	ResetSpline();
 	ArcEndSphere->SetVisibility(false, false);
 
 	Server_FireButtonReleased(bBowTensionIdle);
@@ -177,13 +171,24 @@ void UBowComponent::FireButtonHolding(const FInputActionInstance& ActionInstance
 	FPredictProjectilePathResult ProjectilePathResult;
 	ArrowPathPredictor->PredictProjectilePathWithWind(*GetWorld(), ArrowParams, {GetOwner()}, ProjectilePathResult);
 
+	ResetSpline();
+	DrawSpline(ProjectilePathResult);
+	
+	if(GameHUDWidget) GameHUDWidget->GetBowPowerWidget()->SetPower(ArrowParams.Speed, ArrowCDO->GetMinSpeed(), ArrowCDO->GetMaxSpeed());
+}
+
+void UBowComponent::ResetSpline()
+{
 	ArrowSplinePath->ClearSplinePoints();
 	for (auto* SplineMesh : SplineMeshes)
 	{
 		SplineMesh->DestroyComponent();
 	}
 	SplineMeshes.Empty();
+}
 
+void UBowComponent::DrawSpline(const FPredictProjectilePathResult& ProjectilePathResult)
+{
 	if(!ProjectilePathResult.PathData.IsEmpty() && ArcSplineMesh)
 	{
 		int LastIndex = ProjectilePathResult.PathData.Num() - 1;
@@ -219,8 +224,6 @@ void UBowComponent::FireButtonHolding(const FInputActionInstance& ActionInstance
 			ArcEndSphere->SetVisibility(true, false);
 		}
 	}
-	
-	if(GameHUDWidget) GameHUDWidget->GetBowPowerWidget()->SetPower(ArrowParams.Speed, ArrowCDO->GetMinSpeed(), ArrowCDO->GetMaxSpeed());
 }
 
 void UBowComponent::Fire(const FInputActionInstance& ActionInstance)
