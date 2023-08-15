@@ -9,6 +9,8 @@
 #include "AbstractClasses/Arrow/BasicArrowProjectile.h"
 #include "AbstractClasses/Characters/BasicCharacter.h"
 #include "Camera/CameraComponent.h"
+#include "Components/SplineComponent.h"
+#include "Components/SplineMeshComponent.h"
 #include "Engine/ProjectilePathPredictor.h"
 #include "Engine/Components/BasicProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -22,6 +24,11 @@ UBowComponent::UBowComponent()
 	MaxBowTensionTime = .5f;
 
 	ArrowPathPredictor = CreateDefaultSubobject<UProjectilePathPredictor>(TEXT("ArrowPathPrediction"));
+	
+	ArrowSplinePath = CreateDefaultSubobject<USplineComponent>(TEXT("ArrowSplinePath"));
+	ArrowSplinePath->SetupAttachment(this);
+	ArcEndSphere = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ArcEndSphere"));
+	ArcEndSphere->SetupAttachment(this);
 }
 
 void UBowComponent::InitializeComponent()
@@ -127,6 +134,15 @@ void UBowComponent::FireButtonReleased()
 		bBowTensionIdle = false;
 	}
 
+	ArrowSplinePath->ClearSplinePoints();
+	for (auto* SplineMesh : SplineMeshes)
+	{
+		SplineMesh->DestroyComponent();
+	}
+	SplineMeshes.Empty();
+
+	ArcEndSphere->SetVisibility(false, false);
+
 	Server_FireButtonReleased(bBowTensionIdle);
 }
 
@@ -160,6 +176,49 @@ void UBowComponent::FireButtonHolding(const FInputActionInstance& ActionInstance
 
 	FPredictProjectilePathResult ProjectilePathResult;
 	ArrowPathPredictor->PredictProjectilePathWithWind(*GetWorld(), ArrowParams, {GetOwner()}, ProjectilePathResult);
+
+	ArrowSplinePath->ClearSplinePoints();
+	for (auto* SplineMesh : SplineMeshes)
+	{
+		SplineMesh->DestroyComponent();
+	}
+	SplineMeshes.Empty();
+
+	if(!ProjectilePathResult.PathData.IsEmpty() && ArcSplineMesh)
+	{
+		int LastIndex = ProjectilePathResult.PathData.Num() - 1;
+		for (int i = 0; i <= LastIndex; i++)
+		{
+			ArrowSplinePath->AddSplinePoint(ProjectilePathResult.PathData[i].Location, ESplineCoordinateSpace::World, true);
+			if(i == LastIndex)
+			{
+				ArrowSplinePath->SetSplinePointType(LastIndex, ESplinePointType::CurveClamped, true);
+			}
+
+			if(i == 0) continue;
+			
+			FVector StartLocation;
+			FVector StartTangent;
+			ArrowSplinePath->GetLocationAndTangentAtSplinePoint(i - 1, StartLocation, StartTangent, ESplineCoordinateSpace::World);
+
+			FVector EndLocation;
+			FVector EndTangent;
+			ArrowSplinePath->GetLocationAndTangentAtSplinePoint(i, EndLocation, EndTangent, ESplineCoordinateSpace::World);
+			
+			USplineMeshComponent* SplineMesh = NewObject<USplineMeshComponent>(this);
+			SplineMesh->RegisterComponent();
+			SplineMesh->Mobility = EComponentMobility::Movable;
+			SplineMesh->SetStaticMesh(ArcSplineMesh);
+			SplineMesh->SetStartAndEnd(StartLocation, StartTangent, EndLocation, EndTangent, true);
+			SplineMeshes.Add(SplineMesh);
+		}
+		
+		ArcEndSphere->SetWorldLocation(ProjectilePathResult.PathData.Last().Location);
+		if(!ArcEndSphere->IsVisible())
+		{
+			ArcEndSphere->SetVisibility(true, false);
+		}
+	}
 	
 	if(GameHUDWidget) GameHUDWidget->GetBowPowerWidget()->SetPower(ArrowParams.Speed, ArrowCDO->GetMinSpeed(), ArrowCDO->GetMaxSpeed());
 }

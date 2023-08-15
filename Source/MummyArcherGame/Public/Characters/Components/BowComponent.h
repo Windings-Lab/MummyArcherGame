@@ -11,6 +11,15 @@ UCLASS(Blueprintable, BlueprintType, ClassGroup=(Custom), meta=(BlueprintSpawnab
 class MUMMYARCHERGAME_API UBowComponent : public UStaticMeshComponent
 {
 	GENERATED_BODY()
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="BowSettings|Components", meta=(AllowPrivateAccess = "true"))
+	class USplineComponent* ArrowSplinePath;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="BowSettings|Components", meta=(AllowPrivateAccess = "true"))
+	class UStaticMeshComponent* ArcEndSphere;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="BowSettings", meta=(AllowPrivateAccess = "true"))
+	UStaticMesh* ArcSplineMesh;
 
 	UPROPERTY(EditDefaultsOnly, Category=BowSettings, meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class ABasicArrowProjectile> ArrowProjectileClass;
@@ -74,8 +83,9 @@ private:
 
 private:
 	class ABasicCharacter* Pawn;
-	
 	const ABasicArrowProjectile* ArrowCDO;
+
+	TArray<class USplineMeshComponent*> SplineMeshes;
 	
 	UPROPERTY()
 		TObjectPtr<UGameHUDWidget> GameHUDWidget;
