@@ -229,11 +229,6 @@ bool ABasicCharacter::IsDead()
 	return Health->IsDead();
 }
 
-FVector ABasicCharacter::GetAimOffset()
-{
-	return AimOffset;	
-}
-
 void ABasicCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
