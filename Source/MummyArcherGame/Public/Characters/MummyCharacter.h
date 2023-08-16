@@ -16,7 +16,7 @@ class MUMMYARCHERGAME_API AMummyCharacter : public ABasicCharacter, public ICanM
 	GENERATED_BODY()
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
-	class UBowComponent* Bow;
+	class UBowComponent* SkeletalBow;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Movement", meta = (AllowPrivateAccess = "true"))
 	UInputAction* MoveAction;
@@ -28,7 +28,7 @@ public:
 	AMummyCharacter();
 
 	UFUNCTION(BlueprintCallable)
-		FORCEINLINE	UBowComponent* GetBowComponent() const { return Bow; }
+		FORCEINLINE	UBowComponent* GetBowComponent() const { return SkeletalBow; }
 
 protected:
 	virtual void BeginPlay() override;

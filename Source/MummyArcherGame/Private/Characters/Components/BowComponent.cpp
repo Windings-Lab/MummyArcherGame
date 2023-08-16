@@ -26,9 +26,7 @@ UBowComponent::UBowComponent()
 	ArrowPathPredictor = CreateDefaultSubobject<UProjectilePathPredictor>(TEXT("ArrowPathPrediction"));
 	
 	ArrowSplinePath = CreateDefaultSubobject<USplineComponent>(TEXT("ArrowSplinePath"));
-	ArrowSplinePath->SetupAttachment(this);
 	ArcEndSphere = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ArcEndSphere"));
-	ArcEndSphere->SetupAttachment(this);
 }
 
 void UBowComponent::InitializeComponent()

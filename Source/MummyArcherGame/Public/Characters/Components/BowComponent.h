@@ -8,7 +8,7 @@
 #include "BowComponent.generated.h"
 
 UCLASS(Blueprintable, BlueprintType, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
-class MUMMYARCHERGAME_API UBowComponent : public UStaticMeshComponent
+class MUMMYARCHERGAME_API UBowComponent : public USkeletalMeshComponent
 {
 	GENERATED_BODY()
 	

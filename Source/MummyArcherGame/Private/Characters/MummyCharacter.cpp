@@ -13,9 +13,9 @@
 
 AMummyCharacter::AMummyCharacter()
 {
-	Bow = CreateDefaultSubobject<UBowComponent>(TEXT("Bow"));
+	SkeletalBow = CreateDefaultSubobject<UBowComponent>(TEXT("SkeletalBow"));
 
-	Bow->SetupAttachment(GetMesh(), TEXT("bow_socket"));
+	SkeletalBow->SetupAttachment(GetMesh(), TEXT("bow_socket"));
 }
 
 void AMummyCharacter::BeginPlay()
@@ -30,7 +30,7 @@ void AMummyCharacter::BeginPlay()
 	auto* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
 	if(!Subsystem) return;
 	
-	Bow->AddBowMappingContext(Subsystem, 1);
+	SkeletalBow->AddBowMappingContext(Subsystem, 1);
 
 	Hit(0);
 		
@@ -46,14 +46,14 @@ void AMummyCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
 	if(!Subsystem) return;
 	
-	Bow->RemoveBowMappingContext(Subsystem);
+	SkeletalBow->RemoveBowMappingContext(Subsystem);
 }
 
 void AMummyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	Bow->SetupPlayerInput(PlayerInputComponent);
+	SkeletalBow->SetupPlayerInput(PlayerInputComponent);
 
 	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
 	if (!EnhancedInputComponent) return;
