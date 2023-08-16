@@ -28,7 +28,23 @@ ABasicGameMode::ABasicGameMode()
 
 void ABasicGameMode::PostLogin(APlayerController* NewPlayer)
 {
-	if(NewPlayer)
+
+	Super::PostLogin(NewPlayer);
+	AMummyPlayerController* Player = Cast<AMummyPlayerController>(NewPlayer);
+	Player->SetTeamNumberOnServer(CurrentTeam);
+	Player->SetPositionInTeamOnServer(TempInt);
+	if (TempInt == NumberOfPlayersInTeam)
+	{
+		TempInt = 1;
+		CurrentTeam++;
+	}
+	else
+	{
+		TempInt++;
+	}
+	PlayerControllers.Add(Player);
+	Player->AddWidgetOnServer();
+	/*if(NewPlayer)
 	{
 		AMummyPlayerState* PS = Cast<AMummyPlayerState>(NewPlayer->PlayerState);
 		if(PS && GameState)
@@ -54,37 +70,51 @@ void ABasicGameMode::PostLogin(APlayerController* NewPlayer)
 				}
 			}
 		}
-	}
+	}*/
 	
-	Super::PostLogin(NewPlayer);
+	
+
+	/*if (GetNumPlayers() == PlayersNeedToConnect)
+	{
+		TArray<AActor*> FoundActors;
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), AMummyCharacter::StaticClass(), FoundActors);
+		for (AActor* Actor : FoundActors)
+		{
+			AMummyCharacter* Character = Cast<AMummyCharacter>(Actor);
+			if (Character)
+			{
+				Character->TeamHealthEnableEvent();
+			}
+		}
+	}*/
 }
 
-AActor* ABasicGameMode::ChoosePlayerStart_Implementation(AController* Player)
-{
-	Super::ChoosePlayerStart_Implementation(Player);
-	
-	if (Player)
-	{
-		AMummyPlayerState* PS = Cast<AMummyPlayerState>(Player->PlayerState);
-		if (PS)
-		{
-			TArray<AMummyPlayerStart*> Starts;
-			for (TActorIterator<AMummyPlayerStart> It(GetWorld()); It; ++It)
-			{
-				AMummyPlayerStart* Start = *It;
-				if (Start && Start->Team == PS->Team && Start->bIsFree)
-				{
-					Starts.Add(Start);
-				}
-			}
-			
-			AMummyPlayerStart* Start = Starts[FMath::RandRange(0, Starts.Num() - 1)];
-			if (!Player->HasAuthority())
-			{
-				Start->bIsFree = false;
-			}
-			return Start;
-		}		
-	}
-	return nullptr;
-}
+//AActor* ABasicGameMode::ChoosePlayerStart_Implementation(AController* Player)
+//{
+//	Super::ChoosePlayerStart_Implementation(Player);
+//	
+//	if (Player)
+//	{
+//		AMummyPlayerState* PS = Cast<AMummyPlayerState>(Player->PlayerState);
+//		if (PS)
+//		{
+//			TArray<AMummyPlayerStart*> Starts;
+//			for (TActorIterator<AMummyPlayerStart> It(GetWorld()); It; ++It)
+//			{
+//				AMummyPlayerStart* Start = *It;
+//				if (Start && Start->Team == PS->Team && Start->bIsFree)
+//				{
+//					Starts.Add(Start);
+//				}
+//			}
+//			
+//			AMummyPlayerStart* Start = Starts[FMath::RandRange(0, Starts.Num() - 1)];
+//			if (!Player->HasAuthority())
+//			{
+//				Start->bIsFree = false;
+//			}
+//			return Start;
+//		}		
+//	}
+//	return nullptr;
+//}

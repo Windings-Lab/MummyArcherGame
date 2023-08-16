@@ -25,9 +25,9 @@ void AMummyGameState::HandleBeginPlay()
 	GetWorldSettings()->NotifyBeginPlay();
 	GetWorldSettings()->NotifyMatchStarted();
 
-	for (int i = 0; i < Cast<ABasicGameMode>(GetDefaultGameMode())->TeamCount; i++)
-	{
-		TeamsAlivePlayers.Add(0);
-	}
-	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString::Printf(TEXT("Team %d"), TeamsAlivePlayers.Num()));
+	//for (int i = 0; i < Cast<ABasicGameMode>(GetDefaultGameMode())->TeamCount; i++)
+	//{
+	//	TeamsAlivePlayers.Add(0);
+	//}
+	//GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, FString::Printf(TEXT("Team %d"), TeamsAlivePlayers.Num()));
 }

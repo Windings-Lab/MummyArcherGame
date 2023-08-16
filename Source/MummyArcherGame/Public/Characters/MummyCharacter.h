@@ -29,6 +29,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		FORCEINLINE	UBowComponent* GetBowComponent() const { return SkeletalBow; }
+	;
 
 protected:
 	virtual void BeginPlay() override;

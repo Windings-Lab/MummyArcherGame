@@ -31,6 +31,7 @@ void AWindArea::BeginPlay()
 
 	if(bGlobal)
 	{
+
 		BoxArea->OnComponentBeginOverlap.RemoveAll(this);
 		BoxArea->OnComponentEndOverlap.RemoveAll(this);
 		
