@@ -85,6 +85,10 @@ private:
 	void ResetSpline();
 	void DrawSpline(const struct FPredictProjectilePathResult& ProjectilePathResult);
 
+	// Animation Related
+	UFUNCTION(BlueprintCallable)
+	void OnGetArrow();
+
 private:
 	class ABasicCharacter* Pawn;
 	const ABasicArrowProjectile* ArrowCDO;
@@ -101,4 +105,7 @@ private:
 	bool bBowTensionIdle;
 	UPROPERTY(Replicated, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
 	bool bFirePressed;
+	
+	bool bIsGetArrow;
+	float TimerBeforeGetArrow;
 };

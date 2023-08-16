@@ -96,6 +96,8 @@ void UBowComponent::Focus(const FInputActionValue& Value)
 		if(!bFirePressed)
 		{
 			bBowTensionIdle = false;
+			bIsGetArrow = false;
+			TimerBeforeGetArrow = 0.f;
 		}
 	}
 
@@ -114,7 +116,7 @@ void UBowComponent::FireButtonPressed()
 	
 	bBowTensionIdle = true;
 	bFirePressed	= true;
-
+	
 	Server_FireButtonPressed();
 }
 
@@ -127,16 +129,18 @@ void UBowComponent::Server_FireButtonPressed_Implementation()
 void UBowComponent::FireButtonReleased()
 {
 	if(GameHUDWidget) GameHUDWidget->HideBowPower();
+	
+	ResetSpline();
+	ArcEndSphere->SetVisibility(false, false);
 
 	bFirePressed = false;
+	bIsGetArrow = false;
+	TimerBeforeGetArrow = 0.f;
 	if(!bFocused)
 	{
 		bBowTensionIdle = false;
 	}
-
-	ResetSpline();
-	ArcEndSphere->SetVisibility(false, false);
-
+	
 	Server_FireButtonReleased(bBowTensionIdle);
 }
 
@@ -166,7 +170,14 @@ FProjectileParams UBowComponent::CreateArrowParams(float BowTensionTime)
 
 void UBowComponent::FireButtonHolding(const FInputActionInstance& ActionInstance)
 {
-	FProjectileParams ArrowParams = CreateArrowParams(ActionInstance.GetElapsedTime());
+	if(!bIsGetArrow)
+	{
+		TimerBeforeGetArrow = ActionInstance.GetElapsedTime();
+		return;
+	}
+	
+	float TimerDelta = ActionInstance.GetElapsedTime() - TimerBeforeGetArrow;
+	FProjectileParams ArrowParams = CreateArrowParams(TimerDelta);
 
 	FPredictProjectilePathResult ProjectilePathResult;
 	ArrowPathPredictor->PredictProjectilePathWithWind(*GetWorld(), ArrowParams, {GetOwner()}, ProjectilePathResult);
@@ -226,9 +237,20 @@ void UBowComponent::DrawSpline(const FPredictProjectilePathResult& ProjectilePat
 	}
 }
 
+void UBowComponent::OnGetArrow()
+{
+	if(bFirePressed || bFocused)
+	{
+		bIsGetArrow = true;
+	}
+}
+
 void UBowComponent::Fire(const FInputActionInstance& ActionInstance)
 {
-	FProjectileParams ArrowParams = CreateArrowParams(ActionInstance.GetElapsedTime());
+	if(!bIsGetArrow) return;
+
+	float TimerDelta = ActionInstance.GetElapsedTime() - TimerBeforeGetArrow;
+	FProjectileParams ArrowParams = CreateArrowParams(TimerDelta);
 
 	FPredictProjectilePathResult ProjectilePathResult;
 	ArrowPathPredictor->PredictProjectilePathWithWind(*GetWorld(), ArrowParams, {GetOwner()}, ProjectilePathResult);
