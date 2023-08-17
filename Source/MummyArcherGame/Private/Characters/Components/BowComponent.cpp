@@ -162,6 +162,21 @@ void UBowComponent::Server_FireButtonReleased_Implementation(bool InBowTensionId
 	Pawn->GetArrowOnBowTension()->SetVisibility(false);
 }
 
+void UBowComponent::OnInterrupted()
+{
+	FireButtonReleased();
+	TimerBeforeGetArrow = 0.f;
+	bBowTensionIdle = false;
+	Pawn->GetFollowCamera()->SetFieldOfView(90.f);
+	Server_OnInterrupted();
+}
+
+void UBowComponent::Server_OnInterrupted_Implementation()
+{
+	Pawn->GetArrowFromQuiverMesh()->SetVisibility(false);
+	bBowTensionIdle = false;
+}
+
 FProjectileParams UBowComponent::CreateArrowParams(float BowTensionTime)
 {
 	const FVector Acceleration = FVector(0.f, 0.f, -980 * ArrowCDO->GetGravityScale());
@@ -276,17 +291,6 @@ void UBowComponent::OnGetArrowFromQuiver()
 	Pawn->GetArrowFromQuiverMesh()->SetVisibility(true);
 
 	Server_OnGetArrowFromQuiver();
-}
-
-void UBowComponent::OnInterrupted()
-{
-	FireButtonReleased();
-	Server_OnInterrupted();
-}
-
-void UBowComponent::Server_OnInterrupted_Implementation()
-{
-	Pawn->GetArrowFromQuiverMesh()->SetVisibility(false);
 }
 
 void UBowComponent::Server_OnGetArrowFromQuiver_Implementation()
