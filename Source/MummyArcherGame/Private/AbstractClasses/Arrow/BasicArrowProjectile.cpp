@@ -74,6 +74,7 @@ void ABasicArrowProjectile::OnArrowHit(UPrimitiveComponent* HitComponent, AActor
 	{
 		Server_ArrowRelativeTransform = Arrow->GetRelativeTransform();
 		Server_RootRelativeTransform = RootComponent->GetRelativeTransform();
+		SetLifeSpan(5.f);
 	}
 }
 

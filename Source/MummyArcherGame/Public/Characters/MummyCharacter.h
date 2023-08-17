@@ -18,6 +18,12 @@ class MUMMYARCHERGAME_API AMummyCharacter : public ABasicCharacter, public ICanM
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
 	class UBowComponent* SkeletalBow;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
+	class UStaticMeshComponent* ArrowFromQuiverMesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
+	class UStaticMeshComponent* ArrowOnBowTension;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Movement", meta = (AllowPrivateAccess = "true"))
 	UInputAction* MoveAction;
 
@@ -29,7 +35,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		FORCEINLINE	UBowComponent* GetBowComponent() const { return SkeletalBow; }
-	;
+
+	FORCEINLINE UStaticMeshComponent* GetArrowFromQuiverMesh() const { return ArrowFromQuiverMesh; }
+	FORCEINLINE UStaticMeshComponent* GetArrowOnBowTension() const { return ArrowOnBowTension; }
 
 protected:
 	virtual void BeginPlay() override;

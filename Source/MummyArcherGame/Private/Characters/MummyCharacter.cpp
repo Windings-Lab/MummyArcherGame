@@ -14,8 +14,15 @@
 AMummyCharacter::AMummyCharacter()
 {
 	SkeletalBow = CreateDefaultSubobject<UBowComponent>(TEXT("SkeletalBow"));
-
 	SkeletalBow->SetupAttachment(GetMesh(), TEXT("bow_socket"));
+	
+	ArrowFromQuiverMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GetArrow_Socket"));
+	ArrowFromQuiverMesh->SetVisibility(false);
+	ArrowFromQuiverMesh->SetupAttachment(GetMesh(), TEXT("getArrow_socket"));
+
+	ArrowOnBowTension = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Arrow_Socket"));
+	ArrowOnBowTension->SetVisibility(false);
+	ArrowOnBowTension->SetupAttachment(SkeletalBow, TEXT("arrow_socket"));
 }
 
 void AMummyCharacter::BeginPlay()

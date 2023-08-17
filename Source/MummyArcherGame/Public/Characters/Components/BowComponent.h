@@ -65,6 +65,8 @@ private:
 		void Server_Focus(bool InFocused, bool InBowTensionIdle);
 	UFUNCTION()
 		void FireButtonHolding(const struct FInputActionInstance& ActionInstance);
+	UFUNCTION(Server, Reliable)
+		void Server_FireButtonHolding(float InTensionPercent);
 	UFUNCTION()
 		void FireButtonPressed();
 	UFUNCTION(Server, Reliable)
@@ -87,10 +89,22 @@ private:
 
 	// Animation Related
 	UFUNCTION(BlueprintCallable)
-	void OnGetArrow();
+	void OnBowTensionIdle();
+
+	UFUNCTION(BlueprintCallable)
+	void OnGetArrowFromQuiver();
+
+	UFUNCTION(Server, Reliable)
+	void Server_OnGetArrowFromQuiver();
+
+	UFUNCTION(BlueprintCallable)
+	void OnInterrupted();
+
+	UFUNCTION(Server, Reliable)
+	void Server_OnInterrupted();
 
 private:
-	class ABasicCharacter* Pawn;
+	class AMummyCharacter* Pawn;
 	const ABasicArrowProjectile* ArrowCDO;
 
 	TArray<class USplineMeshComponent*> SplineMeshes;
@@ -105,7 +119,9 @@ private:
 	bool bBowTensionIdle;
 	UPROPERTY(Replicated, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
 	bool bFirePressed;
+	UPROPERTY(Replicated, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
+	float TensionPercent;
 	
-	bool bIsGetArrow;
+	bool bGetArrowFinished;
 	float TimerBeforeGetArrow;
 };

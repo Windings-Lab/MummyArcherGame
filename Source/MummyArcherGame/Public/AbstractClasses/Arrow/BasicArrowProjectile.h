@@ -83,6 +83,7 @@ public:
 	ABasicArrowProjectile();
 
 	FORCEINLINE class UBasicProjectileMovementComponent* GetProjectileMovement() const { return BasicProjectileMovement; }
+	FORCEINLINE class UStaticMesh* GetMesh() const { return Arrow->GetStaticMesh(); }
 	FORCEINLINE float GetMinSpeed() const { return MinSpeed; }
 	FORCEINLINE float GetMaxSpeed() const { return MaxSpeed; }
 	FORCEINLINE float GetGravityScale() const { return GravityScale; }
