@@ -15,10 +15,6 @@ class MUMMYARCHERGAME_API AMummyPlayerController : public APlayerController
 	GENERATED_BODY()
 
 public:
-	//UFUNCTION(BlueprintCallable)
-	//void OnKilled();
-
-	//void Respawn();
 
 	UFUNCTION(Server, Reliable)
 	void SetTeamNumberOnServer(int32 TeamNumberVar);
@@ -30,8 +26,8 @@ public:
 	UFUNCTION(Server, Reliable)
 		void AddWidgetOnServer();
 
-	UFUNCTION(Server, Reliable)
-	void AddWidgetOnClient(const FString& Message);
+	UFUNCTION(Client, Reliable)
+	void AddWidgetOnClient(const FString& Message, int32 TeamNumberLocal, int32 PositionInTeamLocal);
 
 
 

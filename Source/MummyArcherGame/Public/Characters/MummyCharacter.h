@@ -30,6 +30,8 @@ class MUMMYARCHERGAME_API AMummyCharacter : public ABasicCharacter, public ICanM
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Movement", meta = (AllowPrivateAccess = "true"))
 	class UInputAction* JumpAction;
 
+	
+
 public:
 	AMummyCharacter();
 
@@ -38,6 +40,12 @@ public:
 
 	FORCEINLINE UStaticMeshComponent* GetArrowFromQuiverMesh() const { return ArrowFromQuiverMesh; }
 	FORCEINLINE UStaticMeshComponent* GetArrowOnBowTension() const { return ArrowOnBowTension; }
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+		int32 TeamNumber = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+		int32 PositionInTeam = 0;
 
 protected:
 	virtual void BeginPlay() override;

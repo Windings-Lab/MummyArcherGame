@@ -4,34 +4,10 @@
 #include "Characters/Controllers/MummyPlayerController.h"
 
 #include "Blueprint/UserWidget.h"
+#include "Characters/MummyCharacter.h"
 #include "GameFramework/GameModeBase.h"
 #include "GameFramework/PlayerState.h"
 
-//void AMummyPlayerController::Respawn()
-//{
-//	AGameModeBase* GameMode = GetWorld()->GetAuthGameMode();
-//	if (GameMode)
-//	{
-//		APawn* NewPawn = GameMode->SpawnDefaultPawnFor(this, GameMode->ChoosePlayerStart(this));
-//	}
-//}
-//
-//void AMummyPlayerController::SetPositionInTeamOnServer_Implementation(int32 PositionInTeam)
-//{
-//	this->PositionInTeam = PositionInTeam;
-//}
-//
-//void AMummyPlayerController::SetTeamNumberOnServer_Implementation(int32 TeamNumber)
-//{
-//	this->TeamNumber = TeamNumber;
-//}
-//
-//void AMummyPlayerController::OnKilled()
-//{
-//	UnPossess();
-//	InRate = 5.0f;
-//	GetWorldTimerManager().SetTimer(TimerHandleRespawn, this, &AMummyPlayerController::Respawn, InRate, false);
-//}
 
 void AMummyPlayerController::SetTeamNumberOnServer_Implementation(int32 TeamNumberVar)
 {
@@ -47,11 +23,26 @@ void AMummyPlayerController::SetPositionInTeamOnServer_Implementation(int32 Posi
 void AMummyPlayerController::AddWidgetOnServer_Implementation()
 {
 	FString DebugMessage = FString::Printf(TEXT("%d, %s"), PositionInTeam, *PlayerState->GetPlayerName());
-	AddWidgetOnClient(DebugMessage);
-
+	AddWidgetOnClient(DebugMessage, TeamNumber, PositionInTeam);
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, DebugMessage);
+	AMummyCharacter* TempMummyCharacter = Cast<AMummyCharacter>(GetCharacter());
+	if (TempMummyCharacter)
+	{
+		TempMummyCharacter->TeamNumber = TeamNumber;
+		TempMummyCharacter->PositionInTeam = PositionInTeam;
+	}
 }
 
-void AMummyPlayerController::AddWidgetOnClient_Implementation(const FString& Message)
+void AMummyPlayerController::AddWidgetOnClient_Implementation(const FString& Message, int32 TeamNumberLocal, int32 PositionInTeamLocal)
 {
+	PositionInTeam = PositionInTeamLocal;
+	TeamNumber = TeamNumberLocal;
+	AMummyCharacter* TempMummyCharacter = Cast<AMummyCharacter>(GetCharacter());
+	if (TempMummyCharacter)
+	{
+		TempMummyCharacter->TeamNumber = TeamNumber;
+		TempMummyCharacter->PositionInTeam = PositionInTeam;
+	}
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, Message);
 }
+
