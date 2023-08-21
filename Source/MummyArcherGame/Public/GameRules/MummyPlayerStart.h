@@ -15,9 +15,10 @@ class MUMMYARCHERGAME_API AMummyPlayerStart : public APlayerStart
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, Category = "Defaults")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Team")
 	int32 Team;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Team")
 	bool bIsFree = true;
 	
 };
