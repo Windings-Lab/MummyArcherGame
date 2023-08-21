@@ -119,7 +119,7 @@ void UBowComponent::Server_Focus_Implementation(bool InFocused, bool InBowTensio
 
 void UBowComponent::FireButtonPressed()
 {
-	if(GameHUDWidget) GameHUDWidget->ShowBowPower();
+	//if(GameHUDWidget) GameHUDWidget->ShowBowPower();
 	
 	bBowTensionIdle = true;
 	bFirePressed	= true;
@@ -135,7 +135,7 @@ void UBowComponent::Server_FireButtonPressed_Implementation()
 
 void UBowComponent::FireButtonReleased()
 {
-	if(GameHUDWidget) GameHUDWidget->HideBowPower();
+	//if(GameHUDWidget) GameHUDWidget->HideBowPower();
 	
 	ResetSpline();
 	ArcEndSphere->SetVisibility(false, false);
@@ -217,7 +217,7 @@ void UBowComponent::FireButtonHolding(const FInputActionInstance& ActionInstance
 
 	TensionPercent = (ArrowParams.Speed - ArrowCDO->GetMinSpeed()) / (ArrowCDO->GetMaxSpeed() - ArrowCDO->GetMinSpeed());
 	
-	if(GameHUDWidget) GameHUDWidget->GetBowPowerWidget()->SetPower(ArrowParams.Speed, ArrowCDO->GetMinSpeed(), ArrowCDO->GetMaxSpeed());
+	//if(GameHUDWidget) GameHUDWidget->GetBowPowerWidget()->SetPower(ArrowParams.Speed, ArrowCDO->GetMinSpeed(), ArrowCDO->GetMaxSpeed());
 
 	Server_FireButtonHolding(TensionPercent);
 }
