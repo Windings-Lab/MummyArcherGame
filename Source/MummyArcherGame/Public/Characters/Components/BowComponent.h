@@ -102,8 +102,6 @@ private:
 	void ResetSpline();
 	void DrawSpline(const struct FPredictProjectilePathResult& ProjectilePathResult);
 
-	// Change Arrows -------------------------
-	// * Change Arrow State
 public:
 	UFUNCTION(BlueprintCallable)
 	void ChangeArrow(Arrow::EType ArrowType);
@@ -111,23 +109,26 @@ private:
 	UFUNCTION(Server, Reliable)
 	void Server_ChangeArrow(TSubclassOf<ABasicArrowProjectile> InCurrentArrow, UStaticMesh* ArrowMesh);
 
+	// Animation States -------------------------
+	// * (ChangeArrow State) || (FocusIdle State) -> Idle State
+	UFUNCTION(BlueprintCallable)
+	void OnReturnToIdleState();
+	
 	// * Change Arrow State - GetArrowFromQuiver notification
 	UFUNCTION(BlueprintCallable)
 	void OnGetArrowFromQuiver();
-	UFUNCTION(Server, Reliable)
-	void Server_OnGetArrowFromQuiver();
 
-	// * Transition to FocusIdle state
+	// * ChangeArrow State -> FocusIdle State
 	UFUNCTION(BlueprintCallable)
 	void OnChangeArrowFinished();
-	UFUNCTION(Server, Reliable)
-	void Server_OnChangeArrowFinished();
-	// Change Arrows -------------------------
+
+	// * FocusIdle State -> BowTensionIdle State
+	UFUNCTION(BlueprintCallable)
+	void OnBowTensionIdleState(bool InState);
 	
 	UFUNCTION(BlueprintCallable)
 	void OnInterrupted();
-	UFUNCTION(Server, Reliable)
-	void Server_OnInterrupted();
+	// Animation States -------------------------
 
 private:
 	TObjectPtr<class AMummyCharacter> Pawn;
@@ -145,11 +146,13 @@ private:
 	UPROPERTY(Replicated, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
 	bool bFocused;
 	UPROPERTY(Replicated, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
-	bool bFocusIdle;
+	bool bTransitionToFocusIdle;
 	UPROPERTY(Replicated, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
-	bool bBowTensionIdle;
+	bool bTransitionToBowTensionIdle;
+	UPROPERTY(Replicated, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
+	bool bInBowTensionIdleState;
 	UPROPERTY(Replicated, BlueprintReadWrite, meta=(AllowPrivateAccess = "true"))
-	bool bChangeArrow;
+	bool bTransitionToChangeArrow;
 	UPROPERTY(Replicated, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
 	float TensionPercent;
 	
