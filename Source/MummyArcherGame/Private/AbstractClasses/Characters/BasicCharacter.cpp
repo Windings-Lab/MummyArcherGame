@@ -99,7 +99,7 @@ void ABasicCharacter::Tick(float DeltaSeconds)
 
 	if(IsLocallyControlled())
 	{
-		UpdateAim();
+		UpdateAim(DeltaSeconds);
 	}
 }
 
@@ -138,54 +138,13 @@ FVector ABasicCharacter::TraceLine(bool DrawTrace, FHitResult& HitResult)
 	return HitResult.bBlockingHit ? HitResult.ImpactPoint : TraceEndLocation;
 }
 
-FRotator ABasicCharacter::RInterpTo(const FRotator& Current, const FRotator& Target, float DeltaTime, float InterpSpeed)
+void ABasicCharacter::UpdateAim(float DeltaSeconds)
 {
-	double ClampTargetYaw = FMath::ClampAngle(Target.Yaw, -90.f, 90.f);
-	FRotator TargetRot = FRotator(Target.Pitch, ClampTargetYaw, Target.Roll);
-	// if DeltaTime is 0, do not perform any interpolation (Location was already calculated for that frame)
-	if( DeltaTime == 0.f || Current == TargetRot )
-	{
-		return Current;
-	}
-
-	// If no interp speed, jump to target value
-	if( InterpSpeed <= 0.f )
-	{
-		return Target;
-	}
-
-	const float DeltaInterpSpeed = InterpSpeed * DeltaTime;
-
-	const FRotator Delta = (TargetRot - Current).GetNormalized();
-	
-	// If steps are too small, just return Target and assume we have reached our destination.
-	if (Delta.IsNearlyZero())
-	{
-		return TargetRot;
-	}
-
-	// Delta Move, Clamp so we do not over shoot.
-	const FRotator DeltaMove = Delta * FMath::Clamp<float>(DeltaInterpSpeed, 0.f, 1.f);
-	FRotator Result = Current + DeltaMove;
-	if(Result.Yaw > 90.f || Result.Yaw < -90.f)
-	{
-		Result = Current - DeltaMove;
-	}
-
-	Result.Normalize();
-	double ClampYaw = FMath::Clamp(Result.Yaw, -90.0, 90.0);
-	Result.Yaw = ClampYaw;
-	
-	return Result;
-}
-
-void ABasicCharacter::UpdateAim()
-{
-	// TODO: Fix Aim Offset
+	// TODO: Fix Aim Offset Animation
 	FRotator ControlRot = UKismetMathLibrary::NormalizedDeltaRotator(GetControlRotation(), GetActorRotation());
 	FRotator CurrentRot = FRotator(AimOffset.X, AimOffset.Y, 0.f);
 	
-	FRotator ResultRot = RInterpTo(CurrentRot, ControlRot, GetWorld()->GetDeltaSeconds(), 10.f);
+	FRotator ResultRot = UKismetMathLibrary::RInterpTo(CurrentRot, ControlRot, DeltaSeconds, 10.f);
 	FVector Result = FVector(ResultRot.Pitch, ResultRot.Yaw, 0.f);
 		
 	if(AimOffset != Result)

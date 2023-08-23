@@ -56,8 +56,6 @@ protected:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	FRotator RInterpTo( const FRotator& Current, const FRotator& Target, float DeltaTime, float InterpSpeed);
-
 private:
 	UFUNCTION()
 		virtual void Look(const struct FInputActionValue& Value);
@@ -70,7 +68,7 @@ private:
 	UFUNCTION(Server, Reliable)
 		void Server_UpdateAim(const FVector& InAimOffset);
 
-	void UpdateAim();
+	void UpdateAim(float DeltaSeconds);
 
 private:
 	// Animation Properties
