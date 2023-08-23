@@ -7,6 +7,17 @@
 #include "UI/GameHUDWidget.h"
 #include "BowComponent.generated.h"
 
+UENUM(BlueprintType, Blueprintable)
+namespace Arrow
+{
+	enum EType
+	{
+		None = 0,
+		Basic,
+		Teleportation
+	};
+}
+
 UCLASS(Blueprintable, BlueprintType, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class MUMMYARCHERGAME_API UBowComponent : public USkeletalMeshComponent
 {
@@ -22,7 +33,7 @@ class MUMMYARCHERGAME_API UBowComponent : public USkeletalMeshComponent
 	UStaticMesh* ArcSplineMesh;
 
 	UPROPERTY(EditDefaultsOnly, Category=BowSettings, meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<class ABasicArrowProjectile> ArrowProjectileClass;
+	TMap<TEnumAsByte<Arrow::EType>, TSubclassOf<class ABasicArrowProjectile>> ArrowTypes;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="BowSettings", meta = (AllowPrivateAccess = "true"))
 	class UProjectilePathPredictor* ArrowPathPredictor;
@@ -55,14 +66,18 @@ public:
 
 protected:
 	virtual void InitializeComponent() override;
+	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 private:
 	// Action functions
 	UFUNCTION()
-		void Focus(const struct FInputActionValue& Value);
+		void FocusAction(const struct FInputActionValue& Value);
+		void Focus();
+		void Unfocus();
 	UFUNCTION(Server, Reliable)
 		void Server_Focus(bool InFocused, bool InBowTensionIdle);
+	
 	UFUNCTION()
 		void FireButtonHolding(const struct FInputActionInstance& ActionInstance);
 	UFUNCTION(Server, Reliable)
@@ -87,41 +102,56 @@ private:
 	void ResetSpline();
 	void DrawSpline(const struct FPredictProjectilePathResult& ProjectilePathResult);
 
-	// Animation Related
+	// Change Arrows -------------------------
+	// * Change Arrow State
+public:
 	UFUNCTION(BlueprintCallable)
-	void OnBowTensionIdle();
+	void ChangeArrow(Arrow::EType ArrowType);
+private:
+	UFUNCTION(Server, Reliable)
+	void Server_ChangeArrow(TSubclassOf<ABasicArrowProjectile> InCurrentArrow, UStaticMesh* ArrowMesh);
 
+	// * Change Arrow State - GetArrowFromQuiver notification
 	UFUNCTION(BlueprintCallable)
 	void OnGetArrowFromQuiver();
-
 	UFUNCTION(Server, Reliable)
 	void Server_OnGetArrowFromQuiver();
 
+	// * Transition to FocusIdle state
+	UFUNCTION(BlueprintCallable)
+	void OnChangeArrowFinished();
+	UFUNCTION(Server, Reliable)
+	void Server_OnChangeArrowFinished();
+	// Change Arrows -------------------------
+	
 	UFUNCTION(BlueprintCallable)
 	void OnInterrupted();
-
 	UFUNCTION(Server, Reliable)
 	void Server_OnInterrupted();
 
 private:
-	class AMummyCharacter* Pawn;
-	const ABasicArrowProjectile* ArrowCDO;
+	TObjectPtr<class AMummyCharacter> Pawn;
+
+	UPROPERTY(Replicated)
+	TSubclassOf<ABasicArrowProjectile> CurrentArrow;
+	TObjectPtr<const ABasicArrowProjectile> ArrowCDO;
 
 	TArray<class USplineMeshComponent*> SplineMeshes;
 	
 	UPROPERTY()
 		TObjectPtr<UGameHUDWidget> GameHUDWidget;
-
+	
 	// Animation Property
 	UPROPERTY(Replicated, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
 	bool bFocused;
 	UPROPERTY(Replicated, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
-	bool bBowTensionIdle;
+	bool bFocusIdle;
 	UPROPERTY(Replicated, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
-	bool bFirePressed;
+	bool bBowTensionIdle;
+	UPROPERTY(Replicated, BlueprintReadWrite, meta=(AllowPrivateAccess = "true"))
+	bool bChangeArrow;
 	UPROPERTY(Replicated, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
 	float TensionPercent;
 	
-	bool bGetArrowFinished;
 	float TimerBeforeGetArrow;
 };

@@ -11,6 +11,9 @@
 ABasicArrowProjectile::ABasicArrowProjectile() 
 {
 	PrimaryActorTick.bCanEverTick = true;
+	bReplicates = true;
+	bAlwaysRelevant = true;
+	
 	InitialLifeSpan = 5.f;
 	
 	MaxSpeed = 10000.f;
@@ -19,7 +22,6 @@ ABasicArrowProjectile::ABasicArrowProjectile()
 	
 	Arrow = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Arrow"));
 	Arrow->SetWalkableSlopeOverride(FWalkableSlopeOverride(WalkableSlope_Unwalkable, 0.f));
-	Arrow->OnComponentBeginOverlap.AddDynamic(this, &ABasicArrowProjectile::OnArrowBeginOverlap);
 	Arrow->OnComponentHit.AddDynamic(this, &ABasicArrowProjectile::OnArrowHit);
 	Arrow->CanCharacterStepUpOn = ECB_No;
 	SetRootComponent(Arrow);
@@ -43,16 +45,6 @@ void ABasicArrowProjectile::OnConstruction(const FTransform& Transform)
 void ABasicArrowProjectile::BeginPlay()
 {
 	Super::BeginPlay();
-}
-
-void ABasicArrowProjectile::OnArrowBeginOverlap(UPrimitiveComponent* OverlappedComponent
-                                                , AActor* OtherActor
-                                                , UPrimitiveComponent* OtherComp
-                                                , int32 OtherBodyIndex
-                                                , bool bFromSweep
-                                                , const FHitResult & SweepResult)
-{
-	
 }
 
 void ABasicArrowProjectile::OnArrowHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,

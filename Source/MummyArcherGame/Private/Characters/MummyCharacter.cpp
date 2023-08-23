@@ -18,10 +18,12 @@ AMummyCharacter::AMummyCharacter()
 	
 	ArrowFromQuiverMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GetArrow_Socket"));
 	ArrowFromQuiverMesh->SetVisibility(false);
+	ArrowFromQuiverMesh->SetIsReplicated(true);
 	ArrowFromQuiverMesh->SetupAttachment(GetMesh(), TEXT("getArrow_socket"));
 
 	ArrowOnBowTension = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Arrow_Socket"));
 	ArrowOnBowTension->SetVisibility(false);
+	ArrowOnBowTension->SetIsReplicated(true);
 	ArrowOnBowTension->SetupAttachment(SkeletalBow, TEXT("arrow_socket"));
 }
 
