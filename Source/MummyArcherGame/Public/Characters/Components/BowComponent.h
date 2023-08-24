@@ -65,12 +65,13 @@ public:
 	void RemoveBowMappingContext(class UEnhancedInputLocalPlayerSubsystem* Subsystem);
 
 protected:
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	virtual void InitializeComponent() override;
 	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 private:
-	// Action functions
+	// Enchanted Input Action functions
 	UFUNCTION()
 		void FocusAction(const struct FInputActionValue& Value);
 		void Focus();
@@ -102,6 +103,14 @@ private:
 	void ResetSpline();
 	void DrawSpline(const struct FPredictProjectilePathResult& ProjectilePathResult);
 
+	// Basic Input Events --------------------------------------
+public:
+	UFUNCTION(BlueprintCallable)
+	void OnFirePressed();
+	UFUNCTION(BlueprintCallable)
+	void OnFireReleased();
+	// Basic Input Events --------------------------------------
+	
 public:
 	UFUNCTION(BlueprintCallable)
 	void ChangeArrow(Arrow::EType ArrowType);
@@ -155,6 +164,7 @@ private:
 	bool bTransitionToChangeArrow;
 	UPROPERTY(Replicated, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
 	float TensionPercent;
-	
+
+	float TimerOnFirePressed;
 	float TimerBeforeGetArrow;
 };
