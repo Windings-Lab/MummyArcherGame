@@ -5,26 +5,24 @@
 #include "EnhancedInputComponent.h"
 #include "Characters/Components/BowComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "AbstractClasses/Arrow/BasicArrowProjectile.h"
+#include "Characters/Components/QuiverComponent.h"
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/PlayerController.h"
-#include "GameRules/MummyPlayerState.h"
-#include "Kismet/GameplayStatics.h"
-#include "UI/MummyHUD.h"
 
 AMummyCharacter::AMummyCharacter()
 {
 	SkeletalBow = CreateDefaultSubobject<UBowComponent>(TEXT("SkeletalBow"));
 	SkeletalBow->SetupAttachment(GetMesh(), TEXT("bow_socket"));
 	
-	ArrowFromQuiverMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GetArrow_Socket"));
-	ArrowFromQuiverMesh->SetVisibility(false);
-	ArrowFromQuiverMesh->SetIsReplicated(true);
-	ArrowFromQuiverMesh->SetupAttachment(GetMesh(), TEXT("getArrow_socket"));
+	Quiver = CreateDefaultSubobject<UQuiverComponent>(TEXT("Quiver"));
+	Quiver->SetupAttachment(GetMesh());
+}
 
-	ArrowOnBowTension = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Arrow_Socket"));
-	ArrowOnBowTension->SetVisibility(false);
-	ArrowOnBowTension->SetIsReplicated(true);
-	ArrowOnBowTension->SetupAttachment(SkeletalBow, TEXT("arrow_socket"));
+void AMummyCharacter::ChangeArrow(TEnumAsByte<Arrow::EType> ArrowType)
+{
+	SkeletalBow->SetArrowType(ArrowType);
+	SkeletalBow->SetArrow(Quiver->GetArrow(ArrowType));
 }
 
 void AMummyCharacter::BeginPlay()
@@ -41,8 +39,10 @@ void AMummyCharacter::BeginPlay()
 	
 	SkeletalBow->AddBowMappingContext(Subsystem, 1);
 
-	Hit(0);
-		
+	if(IsLocallyControlled())
+	{
+		ChangeArrow(Arrow::EType::Basic);
+	}
 }
 
 void AMummyCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)

@@ -8,21 +8,29 @@
 #include "AbstractClasses/Characters/Interfaces/CanMove.h"
 #include "MummyCharacter.generated.h"
 
-class UWidgetComponent;
+namespace Arrow
+{
+	enum EType : int;
+}
 
 UCLASS()
 class MUMMYARCHERGAME_API AMummyCharacter : public ABasicCharacter, public ICanMove, public ICanJump
 {
 	GENERATED_BODY()
 
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	int32 TeamNumber = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	int32 PositionInTeam = 0;
+
+private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
 	class UBowComponent* SkeletalBow;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
-	class UStaticMeshComponent* ArrowFromQuiverMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"))
-	class UStaticMeshComponent* ArrowOnBowTension;
+	class UQuiverComponent* Quiver;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Movement", meta = (AllowPrivateAccess = "true"))
 	UInputAction* MoveAction;
@@ -30,22 +38,16 @@ class MUMMYARCHERGAME_API AMummyCharacter : public ABasicCharacter, public ICanM
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Movement", meta = (AllowPrivateAccess = "true"))
 	class UInputAction* JumpAction;
 
-	
-
 public:
 	AMummyCharacter();
 
 	UFUNCTION(BlueprintCallable)
 		FORCEINLINE	UBowComponent* GetBowComponent() const { return SkeletalBow; }
+	UFUNCTION(BlueprintCallable)
+		void ChangeArrow(TEnumAsByte<Arrow::EType> ArrowType);
 
-	FORCEINLINE UStaticMeshComponent* GetArrowFromQuiverMesh() const { return ArrowFromQuiverMesh; }
-	FORCEINLINE UStaticMeshComponent* GetArrowOnBowTension() const { return ArrowOnBowTension; }
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-		int32 TeamNumber = 0;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-		int32 PositionInTeam = 0;
+	FORCEINLINE FName GetArrowSocket() const { return TEXT("arrow_socket"); }
+	FORCEINLINE FName GetQuiverSocket() const { return TEXT("getArrow_socket"); }
 
 protected:
 	virtual void BeginPlay() override;

@@ -4,18 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "UI/GameHUDWidget.h"
 #include "BowComponent.generated.h"
 
-UENUM(BlueprintType, Blueprintable)
 namespace Arrow
 {
-	enum EType
-	{
-		None = 0,
-		Basic,
-		Teleportation
-	};
+	enum EType : int;
 }
 
 UCLASS(Blueprintable, BlueprintType, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -31,9 +24,6 @@ class MUMMYARCHERGAME_API UBowComponent : public USkeletalMeshComponent
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="BowSettings", meta=(AllowPrivateAccess = "true"))
 	UStaticMesh* ArcSplineMesh;
-
-	UPROPERTY(EditDefaultsOnly, Category=BowSettings, meta = (AllowPrivateAccess = "true"))
-	TMap<TEnumAsByte<Arrow::EType>, TSubclassOf<class ABasicArrowProjectile>> ArrowTypes;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="BowSettings", meta = (AllowPrivateAccess = "true"))
 	class UProjectilePathPredictor* ArrowPathPredictor;
@@ -67,7 +57,6 @@ public:
 protected:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	virtual void InitializeComponent() override;
-	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 private:
@@ -95,9 +84,9 @@ private:
 		struct FProjectileParams CreateArrowParams(float BowTensionTime);
 	UFUNCTION()
 		void Fire(const struct FInputActionInstance& ActionInstance);
-		void Fire(const FTransform& SpawnTransform);
+		void Fire(const FTransform& InTransform, float Speed);
 	UFUNCTION(Server, Reliable)
-		void Server_Fire(const FTransform& SpawnTransform);
+		void Server_Fire(const FTransform& InTransform, float Speed);
 
 	// Spline
 	void ResetSpline();
@@ -112,11 +101,16 @@ public:
 	// Basic Input Events --------------------------------------
 	
 public:
-	UFUNCTION(BlueprintCallable)
-	void ChangeArrow(Arrow::EType ArrowType);
+	void SetArrow(TSubclassOf<class ABasicArrowProjectile> InCurrentArrow);
 private:
 	UFUNCTION(Server, Reliable)
-	void Server_ChangeArrow(TSubclassOf<ABasicArrowProjectile> InCurrentArrow, UStaticMesh* ArrowMesh);
+	void Server_SetArrow(TSubclassOf<class ABasicArrowProjectile> InCurrentArrow);
+
+public:
+	void SetArrowType(TEnumAsByte<Arrow::EType> ArrowType);
+private:
+	UFUNCTION(Server, Reliable)
+	void Server_SetArrowType(Arrow::EType ArrowType);
 
 	// Animation States -------------------------
 	// * (ChangeArrow State) || (FocusIdle State) -> Idle State
@@ -143,13 +137,18 @@ private:
 	TObjectPtr<class AMummyCharacter> Pawn;
 
 	UPROPERTY(Replicated)
-	TSubclassOf<ABasicArrowProjectile> CurrentArrow;
-	TObjectPtr<const ABasicArrowProjectile> ArrowCDO;
+	TEnumAsByte<Arrow::EType> CurrentArrowType;
+
+	UPROPERTY(ReplicatedUsing=OnRep_CurrentArrow)
+	class ABasicArrowProjectile* CurrentArrow;
+
+	UFUNCTION()
+	void OnRep_CurrentArrow();
 
 	TArray<class USplineMeshComponent*> SplineMeshes;
 	
 	UPROPERTY()
-		TObjectPtr<UGameHUDWidget> GameHUDWidget;
+		TObjectPtr<class UGameHUDWidget> GameHUDWidget;
 	
 	// Animation Property
 	UPROPERTY(Replicated, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
@@ -160,8 +159,11 @@ private:
 	bool bTransitionToBowTensionIdle;
 	UPROPERTY(Replicated, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
 	bool bInBowTensionIdleState;
+	
 	UPROPERTY(Replicated, BlueprintReadWrite, meta=(AllowPrivateAccess = "true"))
 	bool bTransitionToChangeArrow;
+	bool bChangingArrow;
+	
 	UPROPERTY(Replicated, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
 	float TensionPercent;
 

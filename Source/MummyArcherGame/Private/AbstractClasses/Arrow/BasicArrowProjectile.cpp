@@ -3,6 +3,9 @@
 #include "AbstractClasses/Arrow/BasicArrowProjectile.h"
 
 #include "Characters/MummyCharacter.h"
+#include "Components/PointLightComponent.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
 #include "MummyArcherGame/Public/Engine/Components/BasicProjectileMovementComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -10,7 +13,6 @@
 
 ABasicArrowProjectile::ABasicArrowProjectile() 
 {
-	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
 	bAlwaysRelevant = true;
 	
@@ -23,15 +25,50 @@ ABasicArrowProjectile::ABasicArrowProjectile()
 	Arrow = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Arrow"));
 	Arrow->SetWalkableSlopeOverride(FWalkableSlopeOverride(WalkableSlope_Unwalkable, 0.f));
 	Arrow->OnComponentHit.AddDynamic(this, &ABasicArrowProjectile::OnArrowHit);
+	Arrow->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Arrow->CanCharacterStepUpOn = ECB_No;
 	SetRootComponent(Arrow);
+
+	PointLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("PointLight"));
+	PointLight->SetLightColor(FLinearColor(50.f, 255.f, 28.f));
+	PointLight->SetAttenuationRadius(300.f);
+	PointLight->SetupAttachment(RootComponent);
+
+	ProjectileEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("ProjectileEffect"));
 	
 	BasicProjectileMovement = CreateDefaultSubobject<UBasicProjectileMovementComponent>(TEXT("ProjectileComponen"));
 	BasicProjectileMovement->UpdatedComponent = Arrow;
+	BasicProjectileMovement->bSimulationEnabled = false;
 	BasicProjectileMovement->InitialSpeed = 0.f;
 	BasicProjectileMovement->MaxSpeed = MaxSpeed;
 	BasicProjectileMovement->bRotationFollowsVelocity = true;
 	BasicProjectileMovement->bShouldBounce = false;
+}
+
+void ABasicArrowProjectile::Server_Fire(const FTransform& InTransform, float Speed)
+{
+	SetActorRotation(InTransform.GetRotation());
+	SetActorLocation(InTransform.GetLocation());
+	// DrawDebugSphere(GetWorld(), Arrow->GetComponentLocation(), 20.f, 8, FColor::Green, false, 5.f);
+	// DrawDebugDirectionalArrow(GetWorld(), Arrow->GetComponentLocation()
+	// 	, Arrow->GetComponentLocation() + Arrow->GetComponentRotation().Vector() * 1000.f, 5.f, FColor::Yellow, false, 5.f);
+	BasicProjectileMovement->Velocity = InTransform.GetRotation().Vector() * Speed;
+	BasicProjectileMovement->bSimulationEnabled = true;
+	Arrow->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+	Multicast_Fire(InTransform, Speed);
+}
+
+void ABasicArrowProjectile::Multicast_Fire_Implementation(const FTransform& InTransform, float Speed)
+{
+	if(GetOwner()->HasAuthority()) return;
+	
+	SetActorRotation(InTransform.GetRotation());
+	SetActorLocation(InTransform.GetLocation());
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), FlashEffect, GetActorLocation(), GetActorRotation());
+	BasicProjectileMovement->Velocity = InTransform.GetRotation().Vector() * Speed;
+	BasicProjectileMovement->bSimulationEnabled = true;
+	Arrow->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 }
 
 void ABasicArrowProjectile::OnConstruction(const FTransform& Transform)
@@ -45,10 +82,11 @@ void ABasicArrowProjectile::OnConstruction(const FTransform& Transform)
 void ABasicArrowProjectile::BeginPlay()
 {
 	Super::BeginPlay();
+	Arrow->SetVisibility(false, true);
 }
 
 void ABasicArrowProjectile::OnArrowHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+                                       UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
 	if (OtherActor == nullptr || OtherActor == this) return;
 
@@ -81,11 +119,10 @@ void ABasicArrowProjectile::OnRep_AttachmentReplication()
 
 	RootComponent->SetRelativeTransform(Server_RootRelativeTransform);
 	Arrow->SetRelativeTransform(Server_ArrowRelativeTransform);
-}
 
-void ABasicArrowProjectile::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
+	auto* test = UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), HitEffect, GetActorLocation(), GetActorRotation());
+	//DrawDebugSphere(GetWorld(), GetActorLocation(), 20.f, 8, FColor::Green, false, 5.f);
+	PointLight->SetIntensity(0.f);
 }
 
 float ABasicArrowProjectile::GetWidth() const

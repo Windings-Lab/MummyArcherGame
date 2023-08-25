@@ -5,14 +5,12 @@
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "AbstractClasses/Arrow/BasicArrowProjectile.h"
 #include "Camera/CameraComponent.h"
 #include "Characters/MummyCharacter.h"
 #include "Components/SplineComponent.h"
 #include "Components/SplineMeshComponent.h"
 #include "Engine/ProjectilePathPredictor.h"
 #include "Engine/Components/BasicProjectileMovementComponent.h"
-#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "UI/MummyHUD.h"
 
@@ -38,15 +36,6 @@ void UBowComponent::InitializeComponent()
 	Pawn = BasicPawn;
 }
 
-void UBowComponent::BeginPlay()
-{
-	Super::BeginPlay();
-	if(Pawn->IsLocallyControlled())
-	{
-		ChangeArrow(Arrow::Basic);
-	}
-}
-
 void UBowComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -57,7 +46,9 @@ void UBowComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	DOREPLIFETIME_CONDITION(UBowComponent, TensionPercent, COND_SkipOwner);
 	DOREPLIFETIME_CONDITION(UBowComponent, bTransitionToChangeArrow, COND_SkipOwner);
 
-	DOREPLIFETIME_CONDITION(UBowComponent, CurrentArrow, COND_SkipOwner);
+	DOREPLIFETIME_CONDITION(UBowComponent, CurrentArrowType, COND_SkipOwner);
+
+	DOREPLIFETIME(UBowComponent, CurrentArrow);
 }
 
 void UBowComponent::SetupPlayerInput(UInputComponent* PlayerInputComponent)
@@ -185,11 +176,7 @@ void UBowComponent::OnInterrupted()
 		TimerOnFirePressed = 0.f;
 	}
 
-	if(!Pawn->HasAuthority())
-	{
-		Pawn->GetArrowOnBowTension()->SetVisibility(false);
-		Pawn->GetArrowFromQuiverMesh()->SetVisibility(false);
-	}
+	CurrentArrow->GetRootComponent()->SetVisibility(false, true);
 
 	bTransitionToBowTensionIdle = false;
 	bTransitionToChangeArrow = false;
@@ -197,20 +184,31 @@ void UBowComponent::OnInterrupted()
 	bTransitionToFocusIdle = false;
 }
 
+void UBowComponent::OnRep_CurrentArrow()
+{
+	if(!CurrentArrow) return;
+	bTransitionToChangeArrow = true;
+
+	if(Pawn->IsLocallyControlled())
+	{
+		bChangingArrow = false;
+	}
+}
+
 FProjectileParams UBowComponent::CreateArrowParams(float BowTensionTime)
 {
-	const FVector Acceleration = FVector(0.f, 0.f, -980 * ArrowCDO->GetGravityScale());
+	const FVector Acceleration = FVector(0.f, 0.f, -980 * CurrentArrow->GetGravityScale());
 	
 	FProjectileParams ArrowParameters(GetSocketTransform(TEXT("arrow_socket"))
-		, ArrowCDO->GetBounds()
+		, CurrentArrow->GetBounds()
 		, Pawn->GetAimLocation()
-		, ArrowCDO->CalculateArrowSpeed(BowTensionTime, MaxBowTensionTime)
-		, ArrowCDO->GetMaxSpeed()
+		, CurrentArrow->CalculateArrowSpeed(BowTensionTime, MaxBowTensionTime)
+		, CurrentArrow->GetMaxSpeed()
 		, Acceleration);
 
 	const FVector Direction = ArrowPathPredictor->GetInitialArrowDirection(*GetWorld(), ArrowParameters, {GetOwner()});
 	ArrowParameters.Transform.SetRotation(Direction.ToOrientationQuat());
-	ArrowParameters.Bounds = ArrowCDO->GetBounds(GetSocketLocation(TEXT("arrow_socket")), Direction);
+	ArrowParameters.Bounds = CurrentArrow->GetBounds(GetSocketLocation(TEXT("arrow_socket")), Direction);
 
 	return ArrowParameters;
 }
@@ -234,7 +232,7 @@ void UBowComponent::FireButtonHolding(const FInputActionInstance& ActionInstance
 	ResetSpline();
 	DrawSpline(ProjectilePathResult);
 
-	TensionPercent = (ArrowParams.Speed - ArrowCDO->GetMinSpeed()) / (ArrowCDO->GetMaxSpeed() - ArrowCDO->GetMinSpeed());
+	TensionPercent = (ArrowParams.Speed - CurrentArrow->GetMinSpeed()) / (CurrentArrow->GetMaxSpeed() - CurrentArrow->GetMinSpeed());
 	
 	//if(GameHUDWidget) GameHUDWidget->GetBowPowerWidget()->SetPower(ArrowParams.Speed, ArrowCDO->GetMinSpeed(), ArrowCDO->GetMaxSpeed());
 
@@ -325,7 +323,7 @@ void UBowComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorCo
 		ResetSpline();
 		DrawSpline(ProjectilePathResult);
 
-		TensionPercent = (ArrowParams.Speed - ArrowCDO->GetMinSpeed()) / (ArrowCDO->GetMaxSpeed() - ArrowCDO->GetMinSpeed());
+		TensionPercent = (ArrowParams.Speed - CurrentArrow->GetMinSpeed()) / (CurrentArrow->GetMaxSpeed() - CurrentArrow->GetMinSpeed());
 
 		Server_FireButtonHolding(TensionPercent);
 	}
@@ -335,7 +333,7 @@ void UBowComponent::OnFireReleased()
 {
 	FireButtonReleased();
 
-	if(!bInBowTensionIdleState)
+	if(!bInBowTensionIdleState || bChangingArrow)
 	{
 		TimerOnFirePressed = 0.f;
 		return;
@@ -346,54 +344,50 @@ void UBowComponent::OnFireReleased()
 	FPredictProjectilePathResult ProjectilePathResult;
 	ArrowPathPredictor->PredictProjectilePathWithWind(*GetWorld(), ArrowParams, {GetOwner()}, ProjectilePathResult);
 	
-	ArrowCDO->GetProjectileMovement()->InitialSpeed = (ArrowParams.Transform.GetRotation().Vector() * ArrowParams.Speed).Length();
-	ArrowCDO->SetIgnoredActor(Pawn);
-	Fire(ArrowParams.Transform);
+	Fire(ArrowParams.Transform, ArrowParams.Speed);
 	TimerOnFirePressed = 0.f;
 }
 
-void UBowComponent::ChangeArrow(Arrow::EType ArrowType)
+void UBowComponent::SetArrow(TSubclassOf<class ABasicArrowProjectile> InCurrentArrow)
 {
-	if(bTransitionToFocusIdle || bTransitionToBowTensionIdle)
-	{
-		bTransitionToChangeArrow = true;
-	}
-	Pawn->GetArrowOnBowTension()->SetVisibility(false);
 	TensionPercent = 0.f;
+	bChangingArrow = true;
+	
 	ResetSpline();
 	ArcEndSphere->SetVisibility(false, false);
-	if(const TSubclassOf<ABasicArrowProjectile> ArrowResult = ArrowTypes.FindChecked(ArrowType))
-	{
-		if(ArrowResult == CurrentArrow)
-		{
-			Server_ChangeArrow(CurrentArrow, ArrowCDO->GetMesh());
-			return;
-		}
-		CurrentArrow = ArrowResult;
-		ArrowCDO = Cast<ABasicArrowProjectile>(ArrowResult->ClassDefaultObject);
-		Pawn->GetArrowOnBowTension()->SetStaticMesh(ArrowCDO->GetMesh());
-		Pawn->GetArrowFromQuiverMesh()->SetStaticMesh(ArrowCDO->GetMesh());
-		Server_ChangeArrow(CurrentArrow, ArrowCDO->GetMesh());
-	}
+	
+	Server_SetArrow(InCurrentArrow);
+}
+
+void UBowComponent::SetArrowType(TEnumAsByte<Arrow::EType> ArrowType)
+{
+	if(CurrentArrowType == ArrowType) return;
+	
+	CurrentArrowType = ArrowType;
+	Server_SetArrowType(ArrowType);
+}
+
+void UBowComponent::Server_SetArrowType_Implementation(Arrow::EType ArrowType)
+{
+	CurrentArrowType = ArrowType;
+}
+
+void UBowComponent::Server_SetArrow_Implementation(TSubclassOf<class ABasicArrowProjectile> InCurrentArrow)
+{
+	FActorSpawnParameters ActorSpawnParameters;
+	ActorSpawnParameters.Owner = Pawn;
+	ActorSpawnParameters.Instigator = Pawn;
+	ActorSpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+	if(CurrentArrow) CurrentArrow->Destroy();
+
+	CurrentArrow = Cast<ABasicArrowProjectile>(GetWorld()->SpawnActor(InCurrentArrow, &Pawn->GetMesh()->GetComponentTransform(), ActorSpawnParameters));
+	CurrentArrow->SetIgnoredActor(Pawn);
 }
 
 void UBowComponent::OnReturnToIdleState()
 {
-	if(Pawn->HasAuthority()) return;
-	Pawn->GetArrowFromQuiverMesh()->SetVisibility(false);
-}
-
-void UBowComponent::Server_ChangeArrow_Implementation(TSubclassOf<ABasicArrowProjectile> InCurrentArrow, UStaticMesh* ArrowMesh)
-{
-	Pawn->GetArrowOnBowTension()->SetVisibility(false);
-	if(bTransitionToFocusIdle || bTransitionToBowTensionIdle)
-	{
-		bTransitionToChangeArrow = true;
-	}
-	if(InCurrentArrow == CurrentArrow) return;
-	CurrentArrow = InCurrentArrow;
-	Pawn->GetArrowOnBowTension()->SetStaticMesh(ArrowMesh);
-	Pawn->GetArrowFromQuiverMesh()->SetStaticMesh(ArrowMesh);
+	CurrentArrow->GetRootComponent()->SetVisibility(false, true);
 }
 
 void UBowComponent::OnChangeArrowFinished()
@@ -408,59 +402,40 @@ void UBowComponent::OnBowTensionIdleState(bool InState)
 	if(Pawn->HasAuthority()) return;
 	if(bInBowTensionIdleState)
 	{
-		Pawn->GetArrowFromQuiverMesh()->SetVisibility(false);
-		Pawn->GetArrowOnBowTension()->SetVisibility(true);
-	}
-	else
-	{
-		Pawn->GetArrowOnBowTension()->SetVisibility(false);
+		CurrentArrow->AttachToComponent(this, FAttachmentTransformRules::SnapToTargetIncludingScale, Pawn->GetArrowSocket());
 	}
 }
 
 void UBowComponent::OnGetArrowFromQuiver()
 {
+	CurrentArrow->GetRootComponent()->SetVisibility(true, true);
+	
 	if(Pawn->HasAuthority()) return;
-	Pawn->GetArrowFromQuiverMesh()->SetVisibility(true);
+	CurrentArrow->AttachToComponent(Pawn->GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, Pawn->GetQuiverSocket());
 }
 
 void UBowComponent::Fire(const FInputActionInstance& ActionInstance)
 {
-	if(!bInBowTensionIdleState) return;
+	if(!bInBowTensionIdleState || bChangingArrow) return;
 
 	float TimerDelta = ActionInstance.GetElapsedTime() - TimerBeforeGetArrow;
 	FProjectileParams ArrowParams = CreateArrowParams(TimerDelta);
 
 	FPredictProjectilePathResult ProjectilePathResult;
 	ArrowPathPredictor->PredictProjectilePathWithWind(*GetWorld(), ArrowParams, {GetOwner()}, ProjectilePathResult);
-	
-	ArrowCDO->GetProjectileMovement()->InitialSpeed = (ArrowParams.Transform.GetRotation().Vector() * ArrowParams.Speed).Length();
-	ArrowCDO->SetIgnoredActor(Pawn);
-	Fire(ArrowParams.Transform);
+
+	Fire(ArrowParams.Transform, ArrowParams.Speed);
 }
 
-void UBowComponent::Fire(const FTransform& SpawnTransform)
+void UBowComponent::Fire(const FTransform& InTransform, float Speed)
 {
-	if(Pawn->HasAuthority())
-	{
-		FActorSpawnParameters ActorSpawnParameters;
-		ActorSpawnParameters.Owner = Pawn;
-		ActorSpawnParameters.Instigator = Pawn;
-		ActorSpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-		
-		GetWorld()->SpawnActor(CurrentArrow, &SpawnTransform, ActorSpawnParameters);
-	}
-	else
-	{
-		Server_Fire(SpawnTransform);
-	}
+	Server_Fire(InTransform, Speed);
+	CurrentArrow = nullptr;
+	Pawn->ChangeArrow(CurrentArrowType);
 }
 
-void UBowComponent::Server_Fire_Implementation(const FTransform& SpawnTransform)
+void UBowComponent::Server_Fire_Implementation(const FTransform& InTransform, float Speed)
 {
-	FActorSpawnParameters ActorSpawnParameters;
-	ActorSpawnParameters.Owner = Pawn;
-	ActorSpawnParameters.Instigator = Pawn;
-	ActorSpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-	
-	GetWorld()->SpawnActor(CurrentArrow, &SpawnTransform, ActorSpawnParameters);
+	CurrentArrow->Server_Fire(InTransform, Speed);
+	CurrentArrow = nullptr;
 }

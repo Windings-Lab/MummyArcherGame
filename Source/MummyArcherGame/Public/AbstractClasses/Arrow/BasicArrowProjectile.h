@@ -7,6 +7,16 @@
 #include "Gameplay/Interfaces/AffectedByWind.h"
 #include "BasicArrowProjectile.generated.h"
 
+UENUM(BlueprintType, Blueprintable)
+namespace Arrow
+{
+	enum EType
+	{
+		Basic = 0,
+		Teleportation
+	};
+}
+
 USTRUCT()
 struct FProjectileBounds
 {
@@ -67,8 +77,20 @@ class ABasicArrowProjectile : public AActor, public IAffectedByWind
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category=Components, meta = (AllowPrivateAccess = "true"))
 	UStaticMeshComponent* Arrow;
 	
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category=Components, meta = (AllowPrivateAccess = "true"))
+	class UPointLightComponent* PointLight;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category=Components, meta = (AllowPrivateAccess = "true"))
+	class UNiagaraComponent* ProjectileEffect;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	class UBasicProjectileMovementComponent* BasicProjectileMovement;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=VFXSettings, meta = (AllowPrivateAccess = "true"))
+	class UNiagaraSystem* HitEffect;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=VFXSettings, meta = (AllowPrivateAccess = "true"))
+	class UNiagaraSystem* FlashEffect;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category=ArrowSettings, meta = (AllowPrivateAccess = "true"))
 	float MinSpeed;
@@ -93,17 +115,20 @@ public:
 	FProjectileBounds GetBounds() const;
 	float CalculateArrowSpeed(float BowTensionTime, float BowMaxTensionTime) const;
 
+	void Server_Fire(const FTransform& InTransform, float Speed);
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_Fire(const FTransform& InTransform, float Speed);
+
 	void SetIgnoredActor(AActor* InActor) const;
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	// Called when client arrow still not collided with something, when server arrow is collided
 	virtual void OnRep_AttachmentReplication() override;
-	virtual void Tick(float DeltaSeconds) override;
 	
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
-
+	
 protected:
 	virtual void SetWindModificator(const FVector& Vector) override;
 	UFUNCTION()
