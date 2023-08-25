@@ -309,7 +309,7 @@ void UBowComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorCo
 		if(bTransitionToBowTensionIdle) TimerOnFirePressed += DeltaTime;
 		else return;
 		
-		if(!bInBowTensionIdleState)
+		if(!bInBowTensionIdleState || bChangingArrow)
 		{
 			TimerOnFirePressed = 0.f;
 			return;
