@@ -304,7 +304,7 @@ void UBowComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorCo
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if(Pawn->IsLocallyControlled())
+	if(Pawn && Pawn->IsLocallyControlled())
 	{
 		if(!CurrentArrow) return;
 
