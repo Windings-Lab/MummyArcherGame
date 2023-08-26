@@ -16,7 +16,7 @@ ABasicArrowProjectile::ABasicArrowProjectile()
 	bReplicates = true;
 	bAlwaysRelevant = true;
 	
-	InitialLifeSpan = 5.f;
+	InitialLifeSpan = 0.f;
 	
 	MaxSpeed = 10000.f;
 	MinSpeed = 500.f;
@@ -35,6 +35,7 @@ ABasicArrowProjectile::ABasicArrowProjectile()
 	PointLight->SetupAttachment(RootComponent);
 
 	ProjectileEffect = CreateDefaultSubobject<UNiagaraComponent>(TEXT("ProjectileEffect"));
+	ProjectileEffect->SetupAttachment(RootComponent);
 	
 	BasicProjectileMovement = CreateDefaultSubobject<UBasicProjectileMovementComponent>(TEXT("ProjectileComponen"));
 	BasicProjectileMovement->UpdatedComponent = Arrow;
