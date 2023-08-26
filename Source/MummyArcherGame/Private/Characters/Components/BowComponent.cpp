@@ -176,7 +176,10 @@ void UBowComponent::OnInterrupted()
 		TimerOnFirePressed = 0.f;
 	}
 
-	CurrentArrow->GetRootComponent()->SetVisibility(false, true);
+	if (CurrentArrow)
+	{
+		CurrentArrow->GetRootComponent()->SetVisibility(false, true);
+	}
 
 	bTransitionToBowTensionIdle = false;
 	bTransitionToChangeArrow = false;

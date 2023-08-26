@@ -16,14 +16,10 @@ class MUMMYARCHERGAME_API UGameHUDWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	//void ShowBowPower();
-	//void HideBowPower();
 
 	UFUNCTION(BlueprintCallable)
 		FORCEINLINE	UHealthWidget* GetHealthWidget() const { return HealthWidget; };
 
-	/*UFUNCTION(BlueprintCallable)
-		FORCEINLINE	UBowPowerWidget* GetBowPowerWidget() const { return BowPowerWidget; };*/
 
 protected:
 	virtual void NativeConstruct() override;
@@ -31,8 +27,5 @@ protected:
 protected:
 	UPROPERTY(meta = (BindWidget))
 		TObjectPtr<UHealthWidget> HealthWidget;
-
-	//UPROPERTY(meta=(BindWidget))
-	//	TObjectPtr<UBowPowerWidget> BowPowerWidget;
 	
 };

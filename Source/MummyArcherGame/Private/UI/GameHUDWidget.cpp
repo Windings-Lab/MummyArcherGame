@@ -19,19 +19,4 @@ void UGameHUDWidget::NativeConstruct()
 {
     Super::NativeConstruct();
 
-    //if (BowPowerWidget)
-    //{
-    //    HideBowPower();
-    //}
 }
-
-//void UGameHUDWidget::ShowBowPower()
-//{
-//    BowPowerWidget->SetVisibility(ESlateVisibility::Visible);
-//}
-//
-//void UGameHUDWidget::HideBowPower()
-//{
-//    BowPowerWidget->SetVisibility(ESlateVisibility::Collapsed);
-//}
-

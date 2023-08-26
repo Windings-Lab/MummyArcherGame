@@ -22,7 +22,7 @@ void AMummyPlayerController::SetPositionInTeamOnServer_Implementation(int32 Posi
 
 void AMummyPlayerController::AddWidgetOnServer_Implementation()
 {
-	FString DebugMessage = FString::Printf(TEXT("%d, %s"), PositionInTeam, *PlayerState->GetPlayerName());
+	FString DebugMessage = FString::Printf(TEXT("%d, %s"), TeamNumber, *PlayerState->GetPlayerName());
 	AddWidgetOnClient(DebugMessage, TeamNumber, PositionInTeam);
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, DebugMessage);
 	AMummyCharacter* TempMummyCharacter = Cast<AMummyCharacter>(GetCharacter());
@@ -42,7 +42,8 @@ void AMummyPlayerController::AddWidgetOnClient_Implementation(const FString& Mes
 	{
 		TempMummyCharacter->TeamNumber = TeamNumber;
 		TempMummyCharacter->PositionInTeam = PositionInTeam;
+
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, Message);
 	}
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Purple, Message);
 }
 

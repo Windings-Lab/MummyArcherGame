@@ -39,6 +39,7 @@ void AMummyCharacter::BeginPlay()
 	
 	SkeletalBow->AddBowMappingContext(Subsystem, 1);
 
+
 	if(IsLocallyControlled())
 	{
 		ChangeArrow(Arrow::EType::Basic);

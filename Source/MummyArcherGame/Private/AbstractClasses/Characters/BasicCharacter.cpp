@@ -84,6 +84,8 @@ void ABasicCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	Hit(0);
+
 	APlayerController* PlayerController = GetController<APlayerController>();
 	if(!PlayerController) return;
 
@@ -91,6 +93,8 @@ void ABasicCharacter::BeginPlay()
 	if(!Subsystem) return;
 	
 	Subsystem->AddMappingContext(DefaultMappingContext, 0);
+
+	
 }
 
 void ABasicCharacter::Tick(float DeltaSeconds)
