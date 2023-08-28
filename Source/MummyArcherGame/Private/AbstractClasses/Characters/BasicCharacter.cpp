@@ -60,7 +60,6 @@ ABasicCharacter::ABasicCharacter()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
-
 	Health = CreateDefaultSubobject<UHealthComponent>(TEXT("Health"));
 
 	HealthBarWidget = CreateDefaultSubobject<UWidgetComponent>((TEXT("Widget")));
@@ -93,8 +92,6 @@ void ABasicCharacter::BeginPlay()
 	if(!Subsystem) return;
 	
 	Subsystem->AddMappingContext(DefaultMappingContext, 0);
-
-	
 }
 
 void ABasicCharacter::Tick(float DeltaSeconds)
@@ -104,6 +101,15 @@ void ABasicCharacter::Tick(float DeltaSeconds)
 	if(IsLocallyControlled())
 	{
 		UpdateAim(DeltaSeconds);
+
+		if(CameraBoom->IsCollisionFixApplied())
+		{
+			CameraBoom->TargetOffset.Z = UKismetMathLibrary::FInterpTo(CameraBoom->TargetOffset.Z, 170.f, DeltaSeconds, 2.f);
+		}
+		else
+		{
+			CameraBoom->TargetOffset.Z = UKismetMathLibrary::FInterpTo(CameraBoom->TargetOffset.Z, 0.f, DeltaSeconds, 2.f);
+		}
 	}
 }
 
