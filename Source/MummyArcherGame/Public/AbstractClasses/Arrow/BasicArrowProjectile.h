@@ -69,7 +69,7 @@ struct FProjectileParams
 	FVector Acceleration;
 };
 
-UCLASS(config=Game)
+UCLASS(Abstract, config=Game)
 class ABasicArrowProjectile : public AActor, public IAffectedByWind
 {
 	GENERATED_BODY()
@@ -117,7 +117,7 @@ public:
 
 	void Server_Fire(const FTransform& InTransform, float Speed);
 	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_Fire(const FTransform& InTransform, float Speed);
+	void Multicast_Fire(const FTransform& InTransform, const FVector& InVelocity);
 
 	void SetIgnoredActor(AActor* InActor) const;
 
