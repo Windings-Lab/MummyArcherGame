@@ -20,11 +20,11 @@ class MUMMYARCHERGAME_API UQuiverComponent : public UStaticMeshComponent
 	GENERATED_BODY()
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<class ABasicArrowProjectile> BasicArrow;
+	TSubclassOf<class ABasicArrow> BasicArrow;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class ATeleportationArrow> TeleportationArrow;
 
 public:
-	TSubclassOf<ABasicArrowProjectile> GetArrow(TEnumAsByte<Arrow::EType> ArrowType);
+	TSubclassOf<class ABasicArrowProjectile> GetArrow(TEnumAsByte<Arrow::EType> ArrowType);
 };

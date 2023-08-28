@@ -4,6 +4,7 @@
 #include "Characters/Components/QuiverComponent.h"
 
 #include "Arrows/TeleportationArrow.h"
+#include "Arrows/BasicArrow.h"
 
 TSubclassOf<ABasicArrowProjectile> UQuiverComponent::GetArrow(TEnumAsByte<Arrow::EType> ArrowType)
 {

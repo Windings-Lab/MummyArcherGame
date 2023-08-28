@@ -11,6 +11,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 
+#define PROJECTILE_OBJECT_TYPE ECC_GameTraceChannel1
+
 ABasicArrowProjectile::ABasicArrowProjectile() 
 {
 	bReplicates = true;
@@ -25,7 +27,7 @@ ABasicArrowProjectile::ABasicArrowProjectile()
 	Arrow = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Arrow"));
 	Arrow->SetWalkableSlopeOverride(FWalkableSlopeOverride(WalkableSlope_Unwalkable, 0.f));
 	Arrow->OnComponentHit.AddDynamic(this, &ABasicArrowProjectile::OnArrowHit);
-	Arrow->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Arrow->SetCollisionProfileName(TEXT("Projectile"));
 	Arrow->CanCharacterStepUpOn = ECB_No;
 	SetRootComponent(Arrow);
 
@@ -50,24 +52,23 @@ void ABasicArrowProjectile::Server_Fire(const FTransform& InTransform, float Spe
 {
 	SetActorRotation(InTransform.GetRotation());
 	SetActorLocation(InTransform.GetLocation());
-	// DrawDebugSphere(GetWorld(), Arrow->GetComponentLocation(), 20.f, 8, FColor::Green, false, 5.f);
-	// DrawDebugDirectionalArrow(GetWorld(), Arrow->GetComponentLocation()
-	// 	, Arrow->GetComponentLocation() + Arrow->GetComponentRotation().Vector() * 1000.f, 5.f, FColor::Yellow, false, 5.f);
 	BasicProjectileMovement->Velocity = InTransform.GetRotation().Vector() * Speed;
 	BasicProjectileMovement->bSimulationEnabled = true;
 	Arrow->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
-	Multicast_Fire(InTransform, Speed);
+	Multicast_Fire(InTransform, BasicProjectileMovement->Velocity);
 }
 
-void ABasicArrowProjectile::Multicast_Fire_Implementation(const FTransform& InTransform, float Speed)
+void ABasicArrowProjectile::Multicast_Fire_Implementation(const FTransform& InTransform, const FVector& InVelocity)
 {
 	if(GetOwner()->HasAuthority()) return;
+
+	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	
 	SetActorRotation(InTransform.GetRotation());
 	SetActorLocation(InTransform.GetLocation());
 	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), FlashEffect, GetActorLocation(), GetActorRotation());
-	BasicProjectileMovement->Velocity = InTransform.GetRotation().Vector() * Speed;
+	BasicProjectileMovement->Velocity = InVelocity;
 	BasicProjectileMovement->bSimulationEnabled = true;
 	Arrow->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 }
