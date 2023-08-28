@@ -6,8 +6,16 @@
 #include "Arrows/TeleportationArrow.h"
 #include "Arrows/BasicArrow.h"
 
-TSubclassOf<ABasicArrowProjectile> UQuiverComponent::GetArrow(TEnumAsByte<Arrow::EType> ArrowType)
+UQuiverComponent::UQuiverComponent()
 {
+	int ArrowTypeCount = Arrow::EType::Max;
+	ArrowCount.Init(0, ArrowTypeCount);
+}
+
+TSubclassOf<ABasicArrowProjectile> UQuiverComponent::GetArrow(Arrow::EType ArrowType)
+{
+	if(ArrowCount[ArrowType] <= 0) return nullptr;
+	
 	switch (ArrowType)
 	{
 	case Arrow::EType::Basic:
@@ -20,4 +28,17 @@ TSubclassOf<ABasicArrowProjectile> UQuiverComponent::GetArrow(TEnumAsByte<Arrow:
 	}
 }
 
+int UQuiverComponent::GetArrowCount(Arrow::EType ArrowType)
+{
+	return ArrowCount[ArrowType];
+}
 
+void UQuiverComponent::SetArrowCount(Arrow::EType ArrowType, int Count)
+{
+	ArrowCount[ArrowType] = Count;
+}
+
+void UQuiverComponent::Decrease(Arrow::EType ArrowType)
+{
+	ArrowCount[ArrowType]--;
+}

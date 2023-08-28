@@ -25,6 +25,15 @@ class MUMMYARCHERGAME_API UQuiverComponent : public UStaticMeshComponent
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class ATeleportationArrow> TeleportationArrow;
 
+	TArray<int> ArrowCount;
+
 public:
-	TSubclassOf<class ABasicArrowProjectile> GetArrow(TEnumAsByte<Arrow::EType> ArrowType);
+	UQuiverComponent();
+	
+	TSubclassOf<class ABasicArrowProjectile> GetArrow(Arrow::EType ArrowType);
+	
+	int GetArrowCount(Arrow::EType ArrowType);
+	void SetArrowCount(Arrow::EType ArrowType, int Count);
+	
+	void Decrease(Arrow::EType ArrowType);
 };

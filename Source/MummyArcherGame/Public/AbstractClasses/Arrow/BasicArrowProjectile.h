@@ -13,7 +13,8 @@ namespace Arrow
 	enum EType
 	{
 		Basic = 0,
-		Teleportation
+		Teleportation,
+		Max
 	};
 }
 

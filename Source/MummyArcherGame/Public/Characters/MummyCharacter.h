@@ -44,7 +44,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 		FORCEINLINE	UBowComponent* GetBowComponent() const { return SkeletalBow; }
 	UFUNCTION(BlueprintCallable)
-		void ChangeArrow(TEnumAsByte<Arrow::EType> ArrowType);
+		void ChangeArrow(Arrow::EType ArrowType);
+	void OnFired(Arrow::EType ArrowType);
 
 	FORCEINLINE FName GetArrowSocket() const { return TEXT("arrow_socket"); }
 	FORCEINLINE FName GetQuiverSocket() const { return TEXT("getArrow_socket"); }

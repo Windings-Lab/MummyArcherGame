@@ -19,10 +19,18 @@ AMummyCharacter::AMummyCharacter()
 	Quiver->SetupAttachment(GetMesh());
 }
 
-void AMummyCharacter::ChangeArrow(TEnumAsByte<Arrow::EType> ArrowType)
+void AMummyCharacter::ChangeArrow(Arrow::EType ArrowType)
 {
 	SkeletalBow->SetArrowType(ArrowType);
 	SkeletalBow->SetArrow(Quiver->GetArrow(ArrowType));
+}
+
+void AMummyCharacter::OnFired(Arrow::EType ArrowType)
+{
+	Quiver->Decrease(ArrowType);
+	
+	if(HasAuthority()) return;
+	ChangeArrow(ArrowType);
 }
 
 void AMummyCharacter::BeginPlay()
@@ -39,7 +47,8 @@ void AMummyCharacter::BeginPlay()
 	
 	SkeletalBow->AddBowMappingContext(Subsystem, 1);
 
-
+	Quiver->SetArrowCount(Arrow::EType::Basic, 10);
+	Quiver->SetArrowCount(Arrow::EType::Teleportation, 10);
 	if(IsLocallyControlled())
 	{
 		ChangeArrow(Arrow::EType::Basic);

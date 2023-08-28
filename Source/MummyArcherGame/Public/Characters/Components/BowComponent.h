@@ -105,6 +105,8 @@ public:
 private:
 	UFUNCTION(Server, Reliable)
 	void Server_SetArrow(TSubclassOf<class ABasicArrowProjectile> InCurrentArrow);
+	UFUNCTION()
+	void OnRep_CurrentArrow();
 
 public:
 	void SetArrowType(TEnumAsByte<Arrow::EType> ArrowType);
@@ -142,9 +144,6 @@ private:
 	UPROPERTY(ReplicatedUsing=OnRep_CurrentArrow)
 	class ABasicArrowProjectile* CurrentArrow;
 
-	UFUNCTION()
-	void OnRep_CurrentArrow();
-
 	TArray<class USplineMeshComponent*> SplineMeshes;
 	
 	UPROPERTY()
@@ -163,6 +162,8 @@ private:
 	UPROPERTY(Replicated, BlueprintReadWrite, meta=(AllowPrivateAccess = "true"))
 	bool bTransitionToChangeArrow;
 	bool bChangingArrow;
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
+	bool bNoArrows = true;
 	
 	UPROPERTY(Replicated, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
 	float TensionPercent;
