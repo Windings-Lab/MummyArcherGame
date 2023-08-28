@@ -1,0 +1,4 @@
+Content/AI/EnergyBallVFX filter=lfs diff=lfs merge=lfs -text
+Content/Maps/DivineComedy filter=lfs diff=lfs merge=lfs -text
+Content/Maps/StylizedRocks filter=lfs diff=lfs merge=lfs -text
+Content/AI/EnergyBallVFX/Texture/T_FireSwirlUV_8X8.uasset filter=lfs diff=lfs merge=lfs -text
