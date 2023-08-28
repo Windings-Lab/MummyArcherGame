@@ -390,7 +390,10 @@ void UBowComponent::Server_SetArrow_Implementation(TSubclassOf<class ABasicArrow
 
 void UBowComponent::OnReturnToIdleState()
 {
-	CurrentArrow->GetRootComponent()->SetVisibility(false, true);
+	if(CurrentArrow)
+	{
+		CurrentArrow->GetRootComponent()->SetVisibility(false, true);
+	}
 }
 
 void UBowComponent::OnChangeArrowFinished()
