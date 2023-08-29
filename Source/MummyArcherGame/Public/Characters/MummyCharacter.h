@@ -43,6 +43,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		FORCEINLINE	UBowComponent* GetBowComponent() const { return SkeletalBow; }
+		FORCEINLINE	UQuiverComponent* GetQuiver() const { return Quiver; }
 	UFUNCTION(BlueprintCallable)
 		void ChangeArrow(Arrow::EType ArrowType);
 	void OnFired(Arrow::EType ArrowType);
