@@ -31,8 +31,10 @@ public:
 	UQuiverComponent();
 	
 	TSubclassOf<class ABasicArrowProjectile> GetArrow(Arrow::EType ArrowType);
-	
+
+	UFUNCTION(BlueprintCallable)
 	int GetArrowCount(Arrow::EType ArrowType);
+
 	void SetArrowCount(Arrow::EType ArrowType, int Count);
 	
 	void Decrease(Arrow::EType ArrowType);
